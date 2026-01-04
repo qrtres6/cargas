@@ -1,6 +1,7 @@
 """
 Bot de automatización para carga de fichas en AgentesNet
 Utiliza Playwright para automatizar el navegador
+Selectores actualizados para Vuetify (Vue.js)
 """
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -47,7 +48,7 @@ class AgentesNetBot:
             logger.info("Navegador cerrado")
 
     def login(self):
-        """Realiza el login en AgentesNet"""
+        """Realiza el login en AgentesNet usando selectores Vuetify"""
         try:
             logger.info(f"Navegando a {Config.AGENTES_URL}")
             self.page.goto(Config.AGENTES_URL, wait_until='networkidle')
@@ -55,101 +56,49 @@ class AgentesNetBot:
             # Esperar a que cargue la página de login
             time.sleep(2)
 
-            # Buscar campos de usuario y contraseña
-            # Intentar diferentes selectores comunes
-            usuario_selectors = [
-                'input[name="username"]',
-                'input[name="user"]',
-                'input[name="usuario"]',
-                'input[type="text"]',
-                '#username',
-                '#user',
-                '.username',
-                'input[placeholder*="usuario" i]',
-                'input[placeholder*="user" i]'
-            ]
+            # Campo de Alias (usuario)
+            logger.info("Buscando campo de Alias...")
+            alias_input = self.page.locator('input[placeholder="Alias"]')
+            alias_input.wait_for(state='visible', timeout=10000)
+            alias_input.fill(Config.AGENTES_USER)
+            logger.info(f"Alias ingresado: {Config.AGENTES_USER}")
 
-            password_selectors = [
-                'input[name="password"]',
-                'input[name="pass"]',
-                'input[name="contraseña"]',
-                'input[type="password"]',
-                '#password',
-                '#pass',
-                '.password'
-            ]
-
-            # Encontrar campo de usuario
-            usuario_input = None
-            for selector in usuario_selectors:
-                try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=1000):
-                        usuario_input = elemento
-                        logger.info(f"Campo usuario encontrado con selector: {selector}")
-                        break
-                except:
-                    continue
-
-            if not usuario_input:
-                raise Exception("No se encontró el campo de usuario")
-
-            # Encontrar campo de contraseña
-            password_input = None
-            for selector in password_selectors:
-                try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=1000):
-                        password_input = elemento
-                        logger.info(f"Campo password encontrado con selector: {selector}")
-                        break
-                except:
-                    continue
-
-            if not password_input:
-                raise Exception("No se encontró el campo de contraseña")
-
-            # Ingresar credenciales
-            logger.info("Ingresando credenciales...")
-            usuario_input.fill(Config.AGENTES_USER)
             time.sleep(0.5)
+
+            # Campo de Contraseña
+            logger.info("Buscando campo de Contraseña...")
+            password_input = self.page.locator('input[placeholder="Contraseña"]')
+            password_input.wait_for(state='visible', timeout=10000)
             password_input.fill(Config.AGENTES_PASSWORD)
+            logger.info("Contraseña ingresada")
+
             time.sleep(0.5)
 
-            # Buscar y hacer click en botón de login
-            login_selectors = [
-                'button[type="submit"]',
-                'input[type="submit"]',
-                'button:has-text("Login")',
-                'button:has-text("Ingresar")',
-                'button:has-text("Entrar")',
-                '.btn-login',
-                '#login-btn',
-                'button.login'
-            ]
-
-            for selector in login_selectors:
-                try:
-                    boton = self.page.locator(selector).first
-                    if boton.is_visible(timeout=1000):
-                        boton.click()
-                        logger.info(f"Click en botón login con selector: {selector}")
-                        break
-                except:
-                    continue
+            # Botón Iniciar sesión
+            logger.info("Buscando botón de Iniciar sesión...")
+            login_btn = self.page.locator('button:has-text("Iniciar sesión")')
+            login_btn.wait_for(state='visible', timeout=10000)
+            login_btn.click()
+            logger.info("Click en botón Iniciar sesión")
 
             # Esperar a que complete el login
             time.sleep(3)
             self.page.wait_for_load_state('networkidle')
 
-            # Verificar si el login fue exitoso (no estamos en página de login)
-            current_url = self.page.url
-            if 'login' not in current_url.lower() or 'dashboard' in current_url.lower():
+            # Verificar si el login fue exitoso buscando el campo de búsqueda
+            try:
+                search_field = self.page.locator('input[placeholder="Buscar usuario"]')
+                search_field.wait_for(state='visible', timeout=10000)
                 self.logged_in = True
-                logger.info("Login exitoso!")
+                logger.info("Login exitoso - Campo de búsqueda visible")
                 return {'success': True, 'message': 'Login exitoso'}
-            else:
-                return {'success': False, 'message': 'Login falló - aún en página de login'}
+            except:
+                # Verificar si hay mensaje de error
+                error_msg = self.page.locator('.v-alert, .error-message, [role="alert"]')
+                if error_msg.count() > 0:
+                    error_text = error_msg.first.text_content()
+                    return {'success': False, 'message': f'Login falló: {error_text}'}
+                return {'success': False, 'message': 'Login falló - No se encontró campo de búsqueda'}
 
         except PlaywrightTimeout as e:
             logger.error(f"Timeout durante login: {e}")
@@ -159,104 +108,34 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def buscar_usuario(self, nombre_usuario):
-        """Busca un usuario en el sistema"""
+        """Busca un usuario en el sistema usando selectores Vuetify"""
         try:
             logger.info(f"Buscando usuario: {nombre_usuario}")
 
-            # Buscar el cuadro de búsqueda
-            search_selectors = [
-                'input[type="search"]',
-                'input[name="search"]',
-                'input[name="buscar"]',
-                'input[placeholder*="buscar" i]',
-                'input[placeholder*="search" i]',
-                'input[placeholder*="usuario" i]',
-                '.search-input',
-                '#search',
-                '.form-control[type="text"]'
-            ]
-
-            search_input = None
-            for selector in search_selectors:
-                try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=2000):
-                        search_input = elemento
-                        logger.info(f"Campo búsqueda encontrado con selector: {selector}")
-                        break
-                except:
-                    continue
-
-            if not search_input:
-                # Intentar buscar cualquier input visible que parezca de búsqueda
-                inputs = self.page.locator('input[type="text"]:visible')
-                if inputs.count() > 0:
-                    search_input = inputs.first
-                    logger.info("Usando primer input de texto visible")
-
-            if not search_input:
-                raise Exception("No se encontró el campo de búsqueda")
-
-            # Limpiar y escribir el nombre de usuario
+            # Campo de búsqueda
+            search_input = self.page.locator('input[placeholder="Buscar usuario"]')
+            search_input.wait_for(state='visible', timeout=10000)
             search_input.clear()
             search_input.fill(nombre_usuario)
+            logger.info(f"Usuario ingresado en búsqueda: {nombre_usuario}")
+
             time.sleep(1)
 
-            # Buscar y hacer click en la lupa
-            lupa_selectors = [
-                'button:has(svg)',
-                '.search-btn',
-                '.btn-search',
-                'button[type="submit"]',
-                'i.fa-search',
-                '.fa-search',
-                'button:has-text("Buscar")',
-                '[class*="search"] button',
-                'button:has(i[class*="search"])',
-                '.input-group-append button',
-                '.search-icon'
-            ]
+            # Click en la lupa (icono mdi-magnify)
+            logger.info("Buscando botón de lupa...")
+            lupa_btn = self.page.locator('button:has(i.mdi-magnify)')
+            lupa_btn.wait_for(state='visible', timeout=10000)
+            lupa_btn.click()
+            logger.info("Click en lupa")
 
-            lupa_clicked = False
-            for selector in lupa_selectors:
-                try:
-                    lupa = self.page.locator(selector).first
-                    if lupa.is_visible(timeout=1000):
-                        lupa.click()
-                        logger.info(f"Click en lupa con selector: {selector}")
-                        lupa_clicked = True
-                        break
-                except:
-                    continue
+            time.sleep(1)
 
-            if not lupa_clicked:
-                # Intentar presionar Enter
-                search_input.press('Enter')
-                logger.info("Presionando Enter para buscar")
-
-            time.sleep(2)
-
-            # Buscar opción "Todos los jugadores"
-            jugadores_selectors = [
-                'text=todos los jugadores',
-                'text=Todos los Jugadores',
-                'text=TODOS LOS JUGADORES',
-                'a:has-text("jugadores")',
-                'button:has-text("jugadores")',
-                '.dropdown-item:has-text("jugadores")',
-                '[class*="player"]',
-                'li:has-text("jugadores")'
-            ]
-
-            for selector in jugadores_selectors:
-                try:
-                    opcion = self.page.locator(selector).first
-                    if opcion.is_visible(timeout=2000):
-                        opcion.click()
-                        logger.info(f"Click en 'Todos los jugadores' con selector: {selector}")
-                        break
-                except:
-                    continue
+            # Esperar a que aparezca el menú y seleccionar "Todos los jugadores"
+            logger.info("Buscando opción 'Todos los jugadores'...")
+            todos_jugadores = self.page.locator('text="Todos los jugadores"')
+            todos_jugadores.wait_for(state='visible', timeout=10000)
+            todos_jugadores.click()
+            logger.info("Click en 'Todos los jugadores'")
 
             time.sleep(2)
             self.page.wait_for_load_state('networkidle')
@@ -264,6 +143,9 @@ class AgentesNetBot:
             logger.info(f"Búsqueda de usuario {nombre_usuario} completada")
             return {'success': True, 'message': f'Usuario {nombre_usuario} buscado'}
 
+        except PlaywrightTimeout as e:
+            logger.error(f"Timeout buscando usuario: {e}")
+            return {'success': False, 'message': f'Timeout: {str(e)}'}
         except Exception as e:
             logger.error(f"Error buscando usuario: {e}")
             return {'success': False, 'message': str(e)}
@@ -274,14 +156,13 @@ class AgentesNetBot:
             logger.info(f"Buscando {nombre_usuario} en la lista de resultados...")
             time.sleep(2)
 
-            # Buscar el usuario en la tabla/lista de resultados
+            # Buscar el usuario en la tabla de resultados
+            # Intentar diferentes selectores para encontrar la fila del usuario
             usuario_selectors = [
-                f'text="{nombre_usuario}"',
-                f'td:has-text("{nombre_usuario}")',
                 f'tr:has-text("{nombre_usuario}")',
-                f'a:has-text("{nombre_usuario}")',
-                f'.user-row:has-text("{nombre_usuario}")',
-                f'[data-user="{nombre_usuario}"]'
+                f'td:has-text("{nombre_usuario}")',
+                f'.v-data-table tr:has-text("{nombre_usuario}")',
+                f'text="{nombre_usuario}"'
             ]
 
             usuario_fila = None
@@ -295,22 +176,14 @@ class AgentesNetBot:
                 except:
                     continue
 
-            if not usuario_fila:
-                # Intentar buscar en tabla
-                tabla = self.page.locator('table tbody tr')
-                for i in range(tabla.count()):
-                    fila = tabla.nth(i)
-                    texto = fila.text_content()
-                    if nombre_usuario.lower() in texto.lower():
-                        usuario_fila = fila
-                        logger.info(f"Usuario encontrado en fila {i} de la tabla")
-                        break
-
             if usuario_fila:
+                # Click en la fila para seleccionar el usuario
                 usuario_fila.click()
                 time.sleep(1)
-                return {'success': True, 'message': f'Usuario {nombre_usuario} encontrado'}
+                logger.info(f"Usuario {nombre_usuario} seleccionado")
+                return {'success': True, 'message': f'Usuario {nombre_usuario} encontrado y seleccionado'}
             else:
+                logger.warning(f"Usuario {nombre_usuario} no encontrado en la lista")
                 return {'success': False, 'message': f'Usuario {nombre_usuario} no encontrado en la lista'}
 
         except Exception as e:
@@ -318,113 +191,78 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def cargar_fichas(self, monto):
-        """Carga fichas al usuario seleccionado"""
+        """Carga fichas al usuario seleccionado usando selectores Vuetify"""
         try:
-            logger.info(f"Cargando {monto} fichas...")
+            logger.info(f"Iniciando carga de {monto} fichas...")
 
-            # Buscar botón de cargar fichas
-            cargar_selectors = [
-                'button:has-text("cargar")',
-                'button:has-text("Cargar")',
-                'button:has-text("depositar")',
-                'button:has-text("Depositar")',
-                'button:has-text("agregar")',
-                'a:has-text("cargar")',
-                '.btn-cargar',
-                '.btn-deposit',
-                '[class*="deposit"]',
-                '[class*="cargar"]',
-                'button:has-text("fichas")',
-                'i.fa-plus',
-                'button:has(i.fa-plus)'
-            ]
+            # Buscar botón de cargar fichas (icono mdi-cash-plus)
+            logger.info("Buscando botón de cargar fichas...")
+            cargar_btn = self.page.locator('button:has(i.mdi-cash-plus)')
+            cargar_btn.wait_for(state='visible', timeout=10000)
+            cargar_btn.first.click()
+            logger.info("Click en botón de cargar fichas")
 
-            boton_cargar = None
-            for selector in cargar_selectors:
-                try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=2000):
-                        boton_cargar = elemento
-                        logger.info(f"Botón cargar encontrado con selector: {selector}")
-                        break
-                except:
-                    continue
-
-            if not boton_cargar:
-                raise Exception("No se encontró el botón de cargar fichas")
-
-            boton_cargar.click()
             time.sleep(2)
 
-            # Buscar campo para ingresar monto
+            # Esperar a que aparezca el modal
+            # Buscar el campo de cantidad en el modal
+            logger.info("Buscando campo de cantidad en el modal...")
+
+            # El campo tiene placeholder="10", pero puede variar
+            # Intentamos varios selectores
             monto_selectors = [
-                'input[name="amount"]',
-                'input[name="monto"]',
-                'input[name="cantidad"]',
-                'input[type="number"]',
-                'input[placeholder*="monto" i]',
-                'input[placeholder*="amount" i]',
-                'input[placeholder*="cantidad" i]',
-                '.amount-input',
-                '#amount',
-                '#monto'
+                '.v-dialog input[type="text"]',
+                '.v-dialog input.v-field__input',
+                'input[placeholder="10"]',
+                '.v-overlay input[type="text"]'
             ]
 
             monto_input = None
             for selector in monto_selectors:
                 try:
                     elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=2000):
+                    if elemento.is_visible(timeout=3000):
                         monto_input = elemento
-                        logger.info(f"Campo monto encontrado con selector: {selector}")
+                        logger.info(f"Campo de monto encontrado con selector: {selector}")
                         break
                 except:
                     continue
-
-            if not monto_input:
-                # Buscar en modal si existe
-                modal = self.page.locator('.modal:visible, .dialog:visible, [role="dialog"]:visible')
-                if modal.count() > 0:
-                    monto_input = modal.locator('input[type="number"], input[type="text"]').first
 
             if not monto_input:
                 raise Exception("No se encontró el campo para ingresar el monto")
 
-            # Ingresar monto
+            # Limpiar e ingresar el monto
             monto_input.clear()
             monto_input.fill(str(monto))
+            logger.info(f"Monto ingresado: {monto}")
+
             time.sleep(0.5)
 
-            # Confirmar la carga
-            confirmar_selectors = [
-                'button:has-text("confirmar")',
-                'button:has-text("Confirmar")',
-                'button:has-text("aceptar")',
-                'button:has-text("Aceptar")',
-                'button:has-text("guardar")',
-                'button:has-text("enviar")',
-                'button[type="submit"]',
-                '.btn-confirm',
-                '.btn-success',
-                '.btn-primary'
-            ]
-
-            for selector in confirmar_selectors:
-                try:
-                    confirmar = self.page.locator(selector).first
-                    if confirmar.is_visible(timeout=2000):
-                        confirmar.click()
-                        logger.info(f"Click en confirmar con selector: {selector}")
-                        break
-                except:
-                    continue
+            # Buscar y hacer click en botón Enviar
+            logger.info("Buscando botón Enviar...")
+            enviar_btn = self.page.locator('button:has-text("Enviar")')
+            enviar_btn.wait_for(state='visible', timeout=10000)
+            enviar_btn.click()
+            logger.info("Click en botón Enviar")
 
             time.sleep(3)
             self.page.wait_for_load_state('networkidle')
 
+            # Verificar si la carga fue exitosa
+            # Buscar mensaje de éxito o que el modal se haya cerrado
+            try:
+                success_msg = self.page.locator('.v-snackbar:has-text("éxito"), .v-alert--success, [role="alert"]:has-text("éxito")')
+                if success_msg.count() > 0:
+                    logger.info("Mensaje de éxito detectado")
+            except:
+                pass
+
             logger.info(f"Carga de {monto} fichas completada")
             return {'success': True, 'message': f'Carga de {monto} fichas completada exitosamente'}
 
+        except PlaywrightTimeout as e:
+            logger.error(f"Timeout cargando fichas: {e}")
+            return {'success': False, 'message': f'Timeout: {str(e)}'}
         except Exception as e:
             logger.error(f"Error cargando fichas: {e}")
             return {'success': False, 'message': str(e)}
