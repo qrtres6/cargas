@@ -40,7 +40,6 @@ async function handleFormSubmit(e) {
 
     // Obtener datos del formulario
     const formData = {
-        asesor: document.getElementById('asesor').value.trim(),
         usuario: document.getElementById('usuario').value.trim(),
         monto: parseFloat(document.getElementById('monto').value)
     };
@@ -160,7 +159,7 @@ async function loadQueue() {
                     <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
                         <div class="queue-item-info">
                             <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
-                            <span class="queue-item-amount">${formatNumber(op.monto)} fichas - Por: ${escapeHtml(op.asesor || 'Sistema')}</span>
+                            <span class="queue-item-amount">${formatNumber(op.monto)} fichas</span>
                         </div>
                         <span class="queue-item-status">
                             ${op.estado === 'en_proceso' ? 'Procesando' : 'En cola'}
@@ -200,7 +199,7 @@ function renderOperations(operations) {
     if (operations.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
                     No hay operaciones registradas
                 </td>
             </tr>
@@ -213,7 +212,6 @@ function renderOperations(operations) {
             <td><strong>#${op.id}</strong></td>
             <td>${escapeHtml(op.usuario_destino)}</td>
             <td><strong>${formatNumber(op.monto)}</strong></td>
-            <td>${escapeHtml(op.asesor || '-')}</td>
             <td><span class="status-badge ${op.estado}">${formatStatus(op.estado)}</span></td>
             <td>${formatDate(op.fecha_creacion)}</td>
             <td title="${escapeHtml(op.mensaje || '')}">${truncate(op.mensaje || '-', 30)}</td>
