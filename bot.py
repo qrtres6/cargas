@@ -208,28 +208,40 @@ class AgentesNetBot:
             # Buscar el campo de cantidad en el modal
             logger.info("Buscando campo de cantidad en el modal...")
 
-            # El campo tiene placeholder="10", pero puede variar
-            # Intentamos varios selectores
-            monto_selectors = [
-                '.v-dialog input[type="text"]',
-                '.v-dialog input.v-field__input',
-                'input[placeholder="10"]',
-                '.v-overlay input[type="text"]'
-            ]
+            # Buscar el campo de monto que NO esté deshabilitado
+            # El modal tiene un campo de saldo (disabled) y uno de monto (enabled)
+            logger.info("Buscando campo de monto habilitado en el modal...")
 
+            # Esperar a que el modal esté visible
+            time.sleep(1)
+
+            # Buscar inputs en el dialog que no estén deshabilitados
             monto_input = None
-            for selector in monto_selectors:
+
+            # Primero intentar con placeholder="10" que es el campo de monto
+            try:
+                elemento = self.page.locator('.v-dialog input[placeholder="10"]:not([disabled])')
+                if elemento.count() > 0 and elemento.first.is_visible(timeout=3000):
+                    monto_input = elemento.first
+                    logger.info("Campo de monto encontrado con placeholder='10'")
+            except:
+                pass
+
+            # Si no, buscar cualquier input habilitado en el dialog
+            if not monto_input:
                 try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=3000):
-                        monto_input = elemento
-                        logger.info(f"Campo de monto encontrado con selector: {selector}")
-                        break
+                    inputs = self.page.locator('.v-dialog input.v-field__input:not([disabled])')
+                    for i in range(inputs.count()):
+                        inp = inputs.nth(i)
+                        if inp.is_visible(timeout=1000) and inp.is_enabled(timeout=1000):
+                            monto_input = inp
+                            logger.info(f"Campo de monto encontrado (input habilitado #{i})")
+                            break
                 except:
-                    continue
+                    pass
 
             if not monto_input:
-                raise Exception("No se encontró el campo para ingresar el monto")
+                raise Exception("No se encontró el campo para ingresar el monto (todos están deshabilitados)")
 
             # Limpiar e ingresar el monto
             monto_input.clear()
