@@ -27,13 +27,13 @@ class AgentesNetBot:
         """Inicia el navegador Playwright"""
         logger.info("Iniciando navegador...")
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(
-            headless=self.headless,
-            args=['--no-sandbox', '--disable-dev-shm-usage']
+        self.browser = self.playwright.firefox.launch(
+            headless=self.headless
         )
         self.context = self.browser.new_context(
             viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            ignore_https_errors=True
         )
         self.page = self.context.new_page()
         self.page.set_default_timeout(self.timeout)
@@ -51,7 +51,7 @@ class AgentesNetBot:
         """Realiza el login en AgentesNet usando selectores Vuetify"""
         try:
             logger.info(f"Navegando a {Config.AGENTES_URL}")
-            self.page.goto(Config.AGENTES_URL, wait_until='networkidle')
+            self.page.goto(Config.AGENTES_URL, wait_until='domcontentloaded', timeout=60000)
 
             # Esperar a que cargue la página de login
             time.sleep(2)
