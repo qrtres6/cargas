@@ -202,49 +202,62 @@ class AgentesNetBot:
             cargar_btn.first.click()
             logger.info("Click en botón de cargar fichas")
 
-            time.sleep(2)
+            # Esperar más tiempo para que el modal cargue completamente
+            time.sleep(3)
 
             # Esperar a que aparezca el modal
-            # Buscar el campo de cantidad en el modal
-            logger.info("Buscando campo de cantidad en el modal...")
+            logger.info("Esperando que el modal esté visible...")
+            modal = self.page.locator('.v-dialog, .v-overlay__content')
+            modal.wait_for(state='visible', timeout=10000)
+            logger.info("Modal visible")
 
-            # Buscar el campo de monto que NO esté deshabilitado
-            # El modal tiene un campo de saldo (disabled) y uno de monto (enabled)
-            logger.info("Buscando campo de monto habilitado en el modal...")
+            # Buscar el campo de monto
+            logger.info("Buscando campo de monto en el modal...")
 
-            # Esperar a que el modal esté visible
-            time.sleep(1)
-
-            # Buscar inputs en el dialog que no estén deshabilitados
             monto_input = None
 
-            # Primero intentar con placeholder="10" que es el campo de monto
+            # Buscar input con placeholder="10" (el campo de cantidad)
             try:
-                elemento = self.page.locator('.v-dialog input[placeholder="10"]:not([disabled])')
-                if elemento.count() > 0 and elemento.first.is_visible(timeout=3000):
-                    monto_input = elemento.first
+                elemento = self.page.locator('input[placeholder="10"]')
+                elemento.wait_for(state='visible', timeout=5000)
+                if elemento.is_visible():
+                    monto_input = elemento
                     logger.info("Campo de monto encontrado con placeholder='10'")
-            except:
-                pass
+            except Exception as e:
+                logger.info(f"No se encontró con placeholder='10': {e}")
 
-            # Si no, buscar cualquier input habilitado en el dialog
+            # Si no encontramos, buscar por otros métodos
             if not monto_input:
                 try:
-                    inputs = self.page.locator('.v-dialog input.v-field__input:not([disabled])')
-                    for i in range(inputs.count()):
+                    # Buscar todos los inputs visibles en el modal que no estén disabled
+                    inputs = self.page.locator('.v-dialog input:not([disabled]), .v-overlay input:not([disabled])')
+                    count = inputs.count()
+                    logger.info(f"Inputs encontrados en modal: {count}")
+                    for i in range(count):
                         inp = inputs.nth(i)
-                        if inp.is_visible(timeout=1000) and inp.is_enabled(timeout=1000):
-                            monto_input = inp
-                            logger.info(f"Campo de monto encontrado (input habilitado #{i})")
-                            break
-                except:
-                    pass
+                        if inp.is_visible():
+                            placeholder = inp.get_attribute('placeholder') or ''
+                            disabled = inp.get_attribute('disabled')
+                            logger.info(f"Input {i}: placeholder='{placeholder}', disabled={disabled}")
+                            if not disabled and placeholder != '':
+                                monto_input = inp
+                                break
+                except Exception as e:
+                    logger.error(f"Error buscando inputs: {e}")
 
             if not monto_input:
-                raise Exception("No se encontró el campo para ingresar el monto (todos están deshabilitados)")
+                raise Exception("No se encontró el campo para ingresar el monto")
 
-            # Limpiar e ingresar el monto
-            monto_input.clear()
+            # Hacer click en el campo primero, luego limpiar y escribir
+            logger.info("Haciendo click en el campo de monto...")
+            monto_input.click()
+            time.sleep(0.5)
+
+            # Seleccionar todo y borrar
+            monto_input.press('Control+a')
+            time.sleep(0.2)
+
+            # Escribir el monto
             monto_input.fill(str(monto))
             logger.info(f"Monto ingresado: {monto}")
 
