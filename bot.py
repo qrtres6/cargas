@@ -202,48 +202,20 @@ class AgentesNetBot:
             cargar_btn.first.click()
             logger.info("Click en botón de cargar fichas")
 
-            # Esperar más tiempo para que el modal cargue completamente
+            # Esperar que el modal cargue
             time.sleep(3)
-
-            # Esperar a que aparezca el modal
-            logger.info("Esperando que el modal esté visible...")
-            modal = self.page.locator('.v-dialog, .v-overlay__content')
-            modal.wait_for(state='visible', timeout=10000)
-            logger.info("Modal visible")
-
-            # Buscar el campo de monto
-            logger.info("Buscando campo de monto en el modal...")
+            logger.info("Buscando campo de monto...")
 
             monto_input = None
 
-            # Buscar input con placeholder="10" (el campo de cantidad)
+            # Buscar directamente el input con placeholder="10"
             try:
                 elemento = self.page.locator('input[placeholder="10"]')
-                elemento.wait_for(state='visible', timeout=5000)
-                if elemento.is_visible():
-                    monto_input = elemento
-                    logger.info("Campo de monto encontrado con placeholder='10'")
+                elemento.wait_for(state='visible', timeout=10000)
+                monto_input = elemento
+                logger.info("Campo de monto encontrado con placeholder='10'")
             except Exception as e:
                 logger.info(f"No se encontró con placeholder='10': {e}")
-
-            # Si no encontramos, buscar por otros métodos
-            if not monto_input:
-                try:
-                    # Buscar todos los inputs visibles en el modal que no estén disabled
-                    inputs = self.page.locator('.v-dialog input:not([disabled]), .v-overlay input:not([disabled])')
-                    count = inputs.count()
-                    logger.info(f"Inputs encontrados en modal: {count}")
-                    for i in range(count):
-                        inp = inputs.nth(i)
-                        if inp.is_visible():
-                            placeholder = inp.get_attribute('placeholder') or ''
-                            disabled = inp.get_attribute('disabled')
-                            logger.info(f"Input {i}: placeholder='{placeholder}', disabled={disabled}")
-                            if not disabled and placeholder != '':
-                                monto_input = inp
-                                break
-                except Exception as e:
-                    logger.error(f"Error buscando inputs: {e}")
 
             if not monto_input:
                 raise Exception("No se encontró el campo para ingresar el monto")
