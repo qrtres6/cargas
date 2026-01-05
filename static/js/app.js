@@ -44,7 +44,8 @@ async function handleFormSubmit(e) {
     // Obtener datos del formulario
     const formData = {
         usuario: document.getElementById('usuario').value.trim(),
-        monto: parseFloat(document.getElementById('monto').value)
+        monto: parseFloat(document.getElementById('monto').value),
+        tipo: document.getElementById('tipo').value
     };
 
     try {
@@ -176,11 +177,12 @@ async function loadQueue() {
                         tiempoInfo = `<span class="queue-item-wait">~${waitTime}s de espera</span>`;
                     }
 
+                    const tipoLabel = op.tipo === 'descarga' ? 'Descarga' : 'Carga';
                     return `
                         <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
                             <div class="queue-item-info">
                                 <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
-                                <span class="queue-item-amount">${formatNumber(op.monto)} fichas</span>
+                                <span class="queue-item-amount">${tipoLabel}: ${formatNumber(op.monto)} fichas</span>
                             </div>
                             <div class="queue-item-time">
                                 ${tiempoInfo}
@@ -260,7 +262,7 @@ function renderOperations(operations) {
     if (operations.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
                     No hay operaciones registradas
                 </td>
             </tr>
@@ -271,6 +273,7 @@ function renderOperations(operations) {
     tbody.innerHTML = operations.map(op => `
         <tr>
             <td><strong>#${op.id}</strong></td>
+            <td><span class="tipo-badge ${op.tipo || 'carga'}">${formatTipo(op.tipo)}</span></td>
             <td>${escapeHtml(op.usuario_destino)}</td>
             <td><strong>${formatNumber(op.monto)}</strong></td>
             <td><span class="status-badge ${op.estado}">${formatStatus(op.estado)}</span></td>
@@ -278,6 +281,14 @@ function renderOperations(operations) {
             <td title="${escapeHtml(op.mensaje || '')}">${truncate(op.mensaje || '-', 30)}</td>
         </tr>
     `).join('');
+}
+
+function formatTipo(tipo) {
+    const tipoMap = {
+        'carga': 'Carga',
+        'descarga': 'Descarga'
+    };
+    return tipoMap[tipo] || 'Carga';
 }
 
 function renderPagination(total, page, limit) {

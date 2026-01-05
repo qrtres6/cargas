@@ -217,13 +217,53 @@ class AgentesNetBot:
             logger.error(f"Error cargando fichas: {e}")
             return {'success': False, 'message': str(e)}
 
-    def ejecutar_carga_completa(self, nombre_usuario, monto):
-        """Ejecuta el proceso completo de carga de fichas (optimizado)"""
+    def descargar_fichas(self, monto):
+        """Descarga fichas del usuario seleccionado"""
+        try:
+            logger.info(f"Descargando {monto} fichas...")
+
+            # Click en botón de descargar (mdi-cash-minus)
+            descargar_btn = self.page.locator('button:has(i.mdi-cash-minus)')
+            descargar_btn.wait_for(state='visible', timeout=5000)
+            descargar_btn.first.click()
+
+            time.sleep(1)
+
+            # Buscar campo de monto
+            monto_input = self.page.locator('input[placeholder="10"]')
+            monto_input.wait_for(state='visible', timeout=5000)
+
+            # Triple click y escribir
+            monto_input.click(click_count=3)
+            time.sleep(0.1)
+            monto_input.type(str(int(monto)))
+
+            time.sleep(0.2)
+
+            # Click en Enviar
+            enviar_btn = self.page.locator('button:has-text("Enviar")')
+            enviar_btn.wait_for(state='visible', timeout=5000)
+            enviar_btn.click()
+
+            time.sleep(1)
+
+            logger.info(f"Descarga de {monto} fichas completada")
+            return {'success': True, 'message': f'Descarga de {monto} fichas completada'}
+
+        except PlaywrightTimeout as e:
+            logger.error(f"Timeout descargando fichas: {e}")
+            return {'success': False, 'message': f'Timeout: {str(e)}'}
+        except Exception as e:
+            logger.error(f"Error descargando fichas: {e}")
+            return {'success': False, 'message': str(e)}
+
+    def ejecutar_carga_completa(self, nombre_usuario, monto, tipo='carga'):
+        """Ejecuta el proceso completo de carga/descarga de fichas"""
         resultados = {
             'login': None,
             'busqueda': None,
             'seleccion': None,
-            'carga': None,
+            'operacion': None,
             'success': False,
             'message': ''
         }
@@ -250,14 +290,20 @@ class AgentesNetBot:
                 resultados['message'] = f"Error en selección: {resultados['seleccion']['message']}"
                 return resultados
 
-            # Cargar fichas
-            resultados['carga'] = self.cargar_fichas(monto)
-            if not resultados['carga']['success']:
-                resultados['message'] = f"Error en carga: {resultados['carga']['message']}"
+            # Cargar o descargar fichas según tipo
+            if tipo == 'descarga':
+                resultados['operacion'] = self.descargar_fichas(monto)
+                accion = 'Descarga'
+            else:
+                resultados['operacion'] = self.cargar_fichas(monto)
+                accion = 'Carga'
+
+            if not resultados['operacion']['success']:
+                resultados['message'] = f"Error en {accion.lower()}: {resultados['operacion']['message']}"
                 return resultados
 
             resultados['success'] = True
-            resultados['message'] = f"Carga exitosa: {monto} fichas a {nombre_usuario}"
+            resultados['message'] = f"{accion} exitosa: {monto} fichas {'de' if tipo == 'descarga' else 'a'} {nombre_usuario}"
             return resultados
 
         except Exception as e:

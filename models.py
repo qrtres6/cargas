@@ -4,12 +4,13 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class Operacion(db.Model):
-    """Registro de cada operación de carga de fichas"""
+    """Registro de cada operación de carga/descarga de fichas"""
     __tablename__ = 'operaciones'
 
     id = db.Column(db.Integer, primary_key=True)
     usuario_destino = db.Column(db.String(100), nullable=False)
     monto = db.Column(db.Float, nullable=False)
+    tipo = db.Column(db.String(20), default='carga')  # carga, descarga
     estado = db.Column(db.String(20), default='pendiente')  # pendiente, en_proceso, completada, error
     asesor = db.Column(db.String(100), nullable=True)
     mensaje = db.Column(db.Text, nullable=True)
@@ -22,6 +23,7 @@ class Operacion(db.Model):
             'id': self.id,
             'usuario_destino': self.usuario_destino,
             'monto': self.monto,
+            'tipo': self.tipo,
             'estado': self.estado,
             'asesor': self.asesor,
             'mensaje': self.mensaje,

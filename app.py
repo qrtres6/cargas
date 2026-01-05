@@ -55,8 +55,8 @@ def index():
 @app.route('/api/cargar', methods=['POST'])
 def cargar_fichas():
     """
-    Endpoint para solicitar carga de fichas
-    Body: { "usuario": "nombre_usuario", "monto": 100, "asesor": "nombre_asesor" }
+    Endpoint para solicitar carga/descarga de fichas
+    Body: { "usuario": "nombre_usuario", "monto": 100, "tipo": "carga|descarga" }
     """
     try:
         data = request.get_json()
@@ -66,6 +66,7 @@ def cargar_fichas():
 
         usuario = data.get('usuario', '').strip()
         monto = data.get('monto')
+        tipo = data.get('tipo', 'carga').strip()
         asesor = data.get('asesor', 'Sistema').strip()
 
         # Validaciones
@@ -74,6 +75,9 @@ def cargar_fichas():
 
         if not monto or monto <= 0:
             return jsonify({'success': False, 'error': 'El monto debe ser mayor a 0'}), 400
+
+        if tipo not in ['carga', 'descarga']:
+            return jsonify({'success': False, 'error': 'El tipo debe ser "carga" o "descarga"'}), 400
 
         try:
             monto = float(monto)
@@ -84,6 +88,7 @@ def cargar_fichas():
         operacion = Operacion(
             usuario_destino=usuario,
             monto=monto,
+            tipo=tipo,
             estado='pendiente',
             asesor=asesor
         )
@@ -94,14 +99,16 @@ def cargar_fichas():
         queue_manager.agregar_tarea(
             operacion_id=operacion.id,
             usuario_destino=usuario,
-            monto=monto
+            monto=monto,
+            tipo=tipo
         )
 
-        logger.info(f"Nueva carga solicitada: {usuario} - {monto} fichas por {asesor}")
+        accion = 'Carga' if tipo == 'carga' else 'Descarga'
+        logger.info(f"Nueva {accion.lower()} solicitada: {usuario} - {monto} fichas por {asesor}")
 
         return jsonify({
             'success': True,
-            'message': 'Carga agregada a la cola',
+            'message': f'{accion} agregada a la cola',
             'operacion_id': operacion.id,
             'posicion_cola': queue_manager.obtener_estado()['tareas_pendientes']
         })

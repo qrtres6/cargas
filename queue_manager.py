@@ -47,12 +47,13 @@ class QueueManager:
         self.worker_thread.start()
         logger.info("QueueManager inicializado y worker thread iniciado")
 
-    def agregar_tarea(self, operacion_id, usuario_destino, monto):
+    def agregar_tarea(self, operacion_id, usuario_destino, monto, tipo='carga'):
         """Agrega una tarea a la cola"""
         tarea = {
             'operacion_id': operacion_id,
             'usuario_destino': usuario_destino,
             'monto': monto,
+            'tipo': tipo,
             'fecha_agregada': datetime.utcnow()
         }
         self.cola.put(tarea)
@@ -88,7 +89,8 @@ class QueueManager:
                         bot = self.bot_class()
                         resultado = bot.ejecutar_carga_completa(
                             tarea['usuario_destino'],
-                            tarea['monto']
+                            tarea['monto'],
+                            tarea.get('tipo', 'carga')
                         )
 
                         # Actualizar operación con resultado
