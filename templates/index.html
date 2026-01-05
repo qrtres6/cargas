@@ -11,9 +11,16 @@
         <!-- Header -->
         <header class="header">
             <h1>Sistema de Carga de Fichas</h1>
-            <div class="status-indicator" id="statusIndicator">
-                <span class="status-dot"></span>
-                <span class="status-text">Conectado</span>
+            <div class="header-status">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Conectado</span>
+                </div>
+                <div class="login-status" id="loginStatus">
+                    <span class="login-dot" id="loginDot"></span>
+                    <span class="login-text" id="loginText">Sin sesión</span>
+                    <button class="btn btn-small btn-login" id="btnLogin" onclick="toggleLogin()">Iniciar</button>
+                </div>
             </div>
         </header>
 

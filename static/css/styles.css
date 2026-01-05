@@ -82,6 +82,66 @@ body {
     color: var(--success-color);
 }
 
+/* Login Status */
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.login-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #fef2f2;
+    border-radius: 20px;
+}
+
+.login-status.logged-in {
+    background: #f0fdf4;
+}
+
+.login-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--error-color);
+    border-radius: 50%;
+}
+
+.login-status.logged-in .login-dot {
+    background: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+.login-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--error-color);
+}
+
+.login-status.logged-in .login-text {
+    color: var(--success-color);
+}
+
+.btn-login {
+    background: var(--primary-color);
+    color: white;
+    margin-left: 4px;
+}
+
+.btn-login:hover {
+    background: var(--primary-hover);
+}
+
+.btn-login.logout {
+    background: var(--error-color);
+}
+
+.btn-login.logout:hover {
+    background: #dc2626;
+}
+
 /* ============== MAIN CONTENT ============== */
 .main-content {
     display: grid;

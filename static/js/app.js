@@ -13,6 +13,8 @@ let currentPageUsuarios = 1;
 const itemsPerPage = 10;
 let processStartTimes = {}; // Almacena tiempos de inicio de procesos
 let countdownInterval = null;
+let isLoggedIn = false;
+let loginCheckInterval = null;
 
 // ============== INICIALIZACIÓN ==============
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilters();
     loadData();
     startAutoRefresh();
+    checkLoginStatus();
+    startLoginCheck();
 });
 
 // ============== FORMULARIOS ==============
@@ -557,4 +561,81 @@ function escapeHtml(text) {
 function truncate(text, length) {
     if (!text || text.length <= length) return text;
     return text.substring(0, length) + '...';
+}
+
+// ============== LOGIN STATUS ==============
+async function checkLoginStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/api/login-status`);
+        const data = await response.json();
+
+        if (data.success) {
+            isLoggedIn = data.logged_in;
+            updateLoginUI();
+        }
+    } catch (error) {
+        console.error('Error checking login status:', error);
+    }
+}
+
+function startLoginCheck() {
+    // Verificar estado de login cada 10 segundos
+    loginCheckInterval = setInterval(checkLoginStatus, 10000);
+}
+
+function updateLoginUI() {
+    const loginStatus = document.getElementById('loginStatus');
+    const loginDot = document.getElementById('loginDot');
+    const loginText = document.getElementById('loginText');
+    const btnLogin = document.getElementById('btnLogin');
+
+    if (isLoggedIn) {
+        loginStatus.classList.add('logged-in');
+        loginText.textContent = 'Logueado';
+        btnLogin.textContent = 'Cerrar';
+        btnLogin.classList.add('logout');
+    } else {
+        loginStatus.classList.remove('logged-in');
+        loginText.textContent = 'Sin sesion';
+        btnLogin.textContent = 'Iniciar';
+        btnLogin.classList.remove('logout');
+    }
+}
+
+async function toggleLogin() {
+    const btnLogin = document.getElementById('btnLogin');
+    const originalText = btnLogin.textContent;
+    btnLogin.disabled = true;
+    btnLogin.textContent = '...';
+
+    try {
+        if (isLoggedIn) {
+            // Cerrar sesion
+            const response = await fetch(`${API_BASE}/api/force-logout`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (data.success) {
+                isLoggedIn = false;
+                updateLoginUI();
+            }
+        } else {
+            // Iniciar sesion
+            const response = await fetch(`${API_BASE}/api/force-login`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (data.success) {
+                isLoggedIn = data.logged_in;
+                updateLoginUI();
+            } else {
+                alert('Error al iniciar sesion: ' + (data.error || data.message || 'Error desconocido'));
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling login:', error);
+        alert('Error de conexion');
+    } finally {
+        btnLogin.disabled = false;
+    }
 }

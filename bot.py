@@ -71,6 +71,35 @@ class AgentesNetBot:
             AgentesNetBot._last_activity = None
             logger.info("Navegador cerrado")
 
+    @classmethod
+    def is_logged_in(cls):
+        """Verifica si está logueado actualmente"""
+        return cls._logged_in and cls._browser is not None
+
+    @classmethod
+    def force_logout(cls):
+        """Fuerza el cierre de sesión"""
+        if cls._browser:
+            try:
+                cls._browser.close()
+                cls._playwright.stop()
+            except:
+                pass
+            cls._browser = None
+            cls._page = None
+            cls._logged_in = False
+            cls._last_activity = None
+            logger.info("Sesión cerrada forzadamente")
+        return {'success': True, 'message': 'Sesión cerrada'}
+
+    def force_login(self):
+        """Fuerza un nuevo login"""
+        # Primero cerrar sesión existente
+        AgentesNetBot.force_logout()
+        # Iniciar navegador y hacer login
+        self.iniciar_navegador()
+        return self.login()
+
     def verificar_sesion(self):
         """Verifica si la sesión sigue activa y hace refresh si es necesario"""
         try:

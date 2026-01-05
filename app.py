@@ -347,6 +347,51 @@ def health_check():
     })
 
 
+@app.route('/api/login-status', methods=['GET'])
+def login_status():
+    """Obtiene el estado actual del login"""
+    try:
+        is_logged = AgentesNetBot.is_logged_in()
+        return jsonify({
+            'success': True,
+            'logged_in': is_logged
+        })
+    except Exception as e:
+        logger.error(f"Error en /api/login-status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/force-login', methods=['POST'])
+def force_login():
+    """Fuerza el login en AgentesNet"""
+    try:
+        bot = AgentesNetBot()
+        resultado = bot.force_login()
+        return jsonify({
+            'success': resultado.get('success', False),
+            'message': resultado.get('message', ''),
+            'logged_in': AgentesNetBot.is_logged_in()
+        })
+    except Exception as e:
+        logger.error(f"Error en /api/force-login: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/force-logout', methods=['POST'])
+def force_logout():
+    """Fuerza el cierre de sesión"""
+    try:
+        resultado = AgentesNetBot.force_logout()
+        return jsonify({
+            'success': True,
+            'message': resultado.get('message', 'Sesión cerrada'),
+            'logged_in': False
+        })
+    except Exception as e:
+        logger.error(f"Error en /api/force-logout: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # ============== PANEL DE ADMINISTRACIÓN ==============
 
 def get_stats():
