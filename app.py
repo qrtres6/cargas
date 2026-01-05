@@ -64,7 +64,7 @@ def cargar_fichas():
         if not data:
             return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
 
-        usuario = data.get('usuario', '').strip()
+        usuario = data.get('usuario', '').strip().lower()
         monto = data.get('monto')
         tipo = data.get('tipo', 'carga').strip()
         asesor = data.get('asesor', 'Sistema').strip()
@@ -247,7 +247,7 @@ def crear_usuario():
         if not data:
             return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
 
-        alias = data.get('alias', '').strip()
+        alias = data.get('alias', '').strip().lower()
         password = data.get('password', '').strip()
         usar_password_rapido = data.get('password_rapido', False)
 
