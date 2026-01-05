@@ -47,12 +47,14 @@ class QueueManager:
         self.worker_thread.start()
         logger.info("QueueManager inicializado y worker thread iniciado")
 
-    def agregar_tarea(self, operacion_id, usuario_destino, monto):
+    def agregar_tarea(self, operacion_id, usuario_destino, monto=None, tipo='carga', password=None):
         """Agrega una tarea a la cola"""
         tarea = {
             'operacion_id': operacion_id,
             'usuario_destino': usuario_destino,
             'monto': monto,
+            'tipo': tipo,  # carga, descarga, crear_usuario
+            'password': password,  # Solo para crear_usuario
             'fecha_agregada': datetime.utcnow()
         }
         self.cola.put(tarea)
@@ -83,13 +85,28 @@ class QueueManager:
                         operacion.fecha_proceso = datetime.utcnow()
                         db.session.commit()
 
-                    # Ejecutar el bot
+                    # Ejecutar el bot según el tipo de operación
                     try:
                         bot = self.bot_class()
-                        resultado = bot.ejecutar_carga_completa(
-                            tarea['usuario_destino'],
-                            tarea['monto']
-                        )
+                        tipo_operacion = tarea.get('tipo', 'carga')
+
+                        if tipo_operacion == 'carga':
+                            resultado = bot.ejecutar_carga_completa(
+                                tarea['usuario_destino'],
+                                tarea['monto']
+                            )
+                        elif tipo_operacion == 'descarga':
+                            resultado = bot.ejecutar_descarga_completa(
+                                tarea['usuario_destino'],
+                                tarea['monto']
+                            )
+                        elif tipo_operacion == 'crear_usuario':
+                            resultado = bot.ejecutar_crear_usuario(
+                                tarea['usuario_destino'],
+                                tarea['password']
+                            )
+                        else:
+                            resultado = {'success': False, 'message': f'Tipo de operación desconocido: {tipo_operacion}'}
 
                         # Actualizar operación con resultado
                         if operacion:

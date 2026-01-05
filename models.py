@@ -4,15 +4,18 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class Operacion(db.Model):
-    """Registro de cada operación de carga de fichas"""
+    """Registro de cada operación (carga, descarga, crear usuario)"""
     __tablename__ = 'operaciones'
 
     id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(20), default='carga')  # carga, descarga, crear_usuario
     usuario_destino = db.Column(db.String(100), nullable=False)
-    monto = db.Column(db.Float, nullable=False)
+    monto = db.Column(db.Float, nullable=True)  # Nullable para crear_usuario
     estado = db.Column(db.String(20), default='pendiente')  # pendiente, en_proceso, completada, error
     asesor = db.Column(db.String(100), nullable=True)
     mensaje = db.Column(db.Text, nullable=True)
+    # Campos adicionales para crear usuario
+    password_usuario = db.Column(db.String(100), nullable=True)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     fecha_proceso = db.Column(db.DateTime, nullable=True)
     fecha_completado = db.Column(db.DateTime, nullable=True)
@@ -20,6 +23,7 @@ class Operacion(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tipo': self.tipo,
             'usuario_destino': self.usuario_destino,
             'monto': self.monto,
             'estado': self.estado,

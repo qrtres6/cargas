@@ -1,5 +1,5 @@
 /**
- * Sistema de Carga de Fichas - Frontend JavaScript
+ * Gana en Casa - Sistema de Gestión - Frontend JavaScript
  */
 
 // ============== CONFIGURACIÓN ==============
@@ -12,72 +12,210 @@ const itemsPerPage = 10;
 
 // ============== INICIALIZACIÓN ==============
 document.addEventListener('DOMContentLoaded', () => {
-    initForm();
+    initForms();
     initFilters();
     loadData();
     startAutoRefresh();
 });
 
-// ============== FORMULARIO ==============
-function initForm() {
-    const form = document.getElementById('cargaForm');
-    form.addEventListener('submit', handleFormSubmit);
+// ============== FORMULARIOS ==============
+function initForms() {
+    // Formulario de Carga
+    document.getElementById('cargaForm').addEventListener('submit', handleCargaSubmit);
+
+    // Formulario de Descarga
+    document.getElementById('descargaForm').addEventListener('submit', handleDescargaSubmit);
+
+    // Formulario de Crear Usuario
+    document.getElementById('crearUsuarioForm').addEventListener('submit', handleCrearUsuarioSubmit);
+
+    // Botón generar contraseña
+    document.getElementById('btnGenerarPass').addEventListener('click', generarPassword);
+
+    // Formulario de Buscar Retiros
+    document.getElementById('buscarRetirosForm').addEventListener('submit', handleBuscarRetiros);
 }
 
-async function handleFormSubmit(e) {
+// ============== CARGAR FICHAS ==============
+async function handleCargaSubmit(e) {
     e.preventDefault();
 
     const btn = document.getElementById('btnCargar');
-    const btnText = btn.querySelector('.btn-text');
-    const btnLoading = btn.querySelector('.btn-loading');
-    const messageDiv = document.getElementById('formMessage');
+    const messageDiv = document.getElementById('cargaMessage');
 
-    // Estado de carga
-    btn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoading.style.display = 'inline';
+    setButtonLoading(btn, true);
     messageDiv.style.display = 'none';
 
-    // Obtener datos del formulario
     const formData = {
-        usuario: document.getElementById('usuario').value.trim(),
-        monto: parseFloat(document.getElementById('monto').value)
+        usuario: document.getElementById('usuarioCarga').value.trim(),
+        monto: parseFloat(document.getElementById('montoCarga').value)
     };
 
     try {
         const response = await fetch(`${API_BASE}/api/cargar`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
 
         const data = await response.json();
 
         if (data.success) {
-            showMessage(messageDiv, 'success',
-                `Carga agregada exitosamente! ID: ${data.operacion_id}. Posición en cola: ${data.posicion_cola}`);
-
-            // Limpiar campos (excepto asesor)
-            document.getElementById('usuario').value = '';
-            document.getElementById('monto').value = '';
-
-            // Actualizar datos
+            showMessage(messageDiv, 'success', `Carga agregada! ID: ${data.operacion_id}`);
+            document.getElementById('usuarioCarga').value = '';
+            document.getElementById('montoCarga').value = '';
             loadData();
         } else {
-            showMessage(messageDiv, 'error', data.error || 'Error al procesar la solicitud');
+            showMessage(messageDiv, 'error', data.error || 'Error al procesar');
         }
-
     } catch (error) {
         console.error('Error:', error);
-        showMessage(messageDiv, 'error', 'Error de conexión con el servidor');
+        showMessage(messageDiv, 'error', 'Error de conexión');
     } finally {
-        // Restaurar botón
-        btn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoading.style.display = 'none';
+        setButtonLoading(btn, false);
     }
+}
+
+// ============== DESCARGAR FICHAS ==============
+async function handleDescargaSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnDescargar');
+    const messageDiv = document.getElementById('descargaMessage');
+
+    setButtonLoading(btn, true);
+    messageDiv.style.display = 'none';
+
+    const formData = {
+        usuario: document.getElementById('usuarioDescarga').value.trim(),
+        monto: parseFloat(document.getElementById('montoDescarga').value)
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/api/descargar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage(messageDiv, 'success', `Descarga agregada! ID: ${data.operacion_id}`);
+            document.getElementById('usuarioDescarga').value = '';
+            document.getElementById('montoDescarga').value = '';
+            loadData();
+        } else {
+            showMessage(messageDiv, 'error', data.error || 'Error al procesar');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(messageDiv, 'error', 'Error de conexión');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+// ============== CREAR USUARIO ==============
+async function handleCrearUsuarioSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnCrearUsuario');
+    const messageDiv = document.getElementById('crearUsuarioMessage');
+
+    setButtonLoading(btn, true);
+    messageDiv.style.display = 'none';
+
+    const formData = {
+        alias: document.getElementById('aliasUsuario').value.trim(),
+        password: document.getElementById('passwordUsuario').value.trim()
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/api/crear-usuario`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage(messageDiv, 'success', `Usuario agregado a cola! ID: ${data.operacion_id}`);
+            document.getElementById('aliasUsuario').value = '';
+            document.getElementById('passwordUsuario').value = '';
+            loadData();
+        } else {
+            showMessage(messageDiv, 'error', data.error || 'Error al procesar');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(messageDiv, 'error', 'Error de conexión');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+// ============== GENERAR CONTRASEÑA ==============
+function generarPassword() {
+    const chars = '0123456789';
+    let password = '';
+    for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('passwordUsuario').value = password;
+}
+
+// ============== BUSCAR RETIROS ==============
+async function handleBuscarRetiros(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnBuscarRetiros');
+    const messageDiv = document.getElementById('buscarRetirosMessage');
+
+    setButtonLoading(btn, true);
+    messageDiv.style.display = 'none';
+
+    const usuario = document.getElementById('usuarioBuscar').value.trim();
+
+    // Filtrar operaciones por tipo descarga y usuario
+    try {
+        let url = `${API_BASE}/api/operaciones?limite=50`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            // Filtrar solo descargas del usuario
+            const retiros = data.operaciones.filter(op =>
+                op.tipo === 'descarga' &&
+                (!usuario || op.usuario_destino.toLowerCase().includes(usuario.toLowerCase()))
+            );
+
+            if (retiros.length > 0) {
+                showMessage(messageDiv, 'success', `Se encontraron ${retiros.length} retiros`);
+            } else {
+                showMessage(messageDiv, 'info', 'No se encontraron retiros');
+            }
+        } else {
+            showMessage(messageDiv, 'error', data.error || 'Error al buscar');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(messageDiv, 'error', 'Error de conexión');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+// ============== UTILIDADES DE UI ==============
+function setButtonLoading(btn, loading) {
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+
+    btn.disabled = loading;
+    btnText.style.display = loading ? 'none' : 'inline';
+    btnLoading.style.display = loading ? 'inline' : 'none';
 }
 
 function showMessage(element, type, message) {
@@ -85,7 +223,6 @@ function showMessage(element, type, message) {
     element.textContent = message;
     element.style.display = 'block';
 
-    // Ocultar después de 5 segundos
     setTimeout(() => {
         element.style.display = 'none';
     }, 5000);
@@ -122,7 +259,7 @@ async function loadStats() {
             document.getElementById('statPendientes').textContent = stats.pendientes;
             document.getElementById('statEnProceso').textContent = stats.en_proceso;
             document.getElementById('statErrores').textContent = stats.errores;
-            document.getElementById('statTotalFichas').textContent = formatNumber(stats.total_fichas_cargadas);
+            document.getElementById('statTotalCargado').textContent = '$ ' + formatNumber(stats.total_cargado);
         }
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
@@ -139,7 +276,6 @@ async function loadQueue() {
             const queueStatus = document.querySelector('.queue-status');
             const queueStatusText = document.getElementById('queueStatusText');
 
-            // Actualizar estado de la cola
             if (data.estado_procesamiento.procesando) {
                 queueStatus.classList.add('active');
                 queueStatusText.textContent = 'Procesando tarea...';
@@ -151,15 +287,15 @@ async function loadQueue() {
                 queueStatusText.textContent = 'Sin tareas en proceso';
             }
 
-            // Renderizar cola
             if (data.cola.length === 0) {
                 queueList.innerHTML = '<div class="empty-queue">No hay tareas pendientes</div>';
             } else {
                 queueList.innerHTML = data.cola.map(op => `
                     <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
                         <div class="queue-item-info">
+                            <span class="queue-item-type ${op.tipo || 'carga'}">${formatTipo(op.tipo || 'carga')}</span>
                             <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
-                            <span class="queue-item-amount">${formatNumber(op.monto)} fichas</span>
+                            <span class="queue-item-amount">${op.monto ? formatNumber(op.monto) + ' fichas' : ''}</span>
                         </div>
                         <span class="queue-item-status">
                             ${op.estado === 'en_proceso' ? 'Procesando' : 'En cola'}
@@ -199,7 +335,7 @@ function renderOperations(operations) {
     if (operations.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
                     No hay operaciones registradas
                 </td>
             </tr>
@@ -210,8 +346,9 @@ function renderOperations(operations) {
     tbody.innerHTML = operations.map(op => `
         <tr>
             <td><strong>#${op.id}</strong></td>
+            <td><span class="type-badge ${op.tipo || 'carga'}">${formatTipo(op.tipo || 'carga')}</span></td>
             <td>${escapeHtml(op.usuario_destino)}</td>
-            <td><strong>${formatNumber(op.monto)}</strong></td>
+            <td><strong>${op.monto ? '$ ' + formatNumber(op.monto) : '-'}</strong></td>
             <td><span class="status-badge ${op.estado}">${formatStatus(op.estado)}</span></td>
             <td>${formatDate(op.fecha_creacion)}</td>
             <td title="${escapeHtml(op.mensaje || '')}">${truncate(op.mensaje || '-', 30)}</td>
@@ -230,12 +367,10 @@ function renderPagination(total, page, limit) {
 
     let html = '';
 
-    // Botón anterior
     if (page > 1) {
         html += `<button onclick="goToPage(${page - 1})">Anterior</button>`;
     }
 
-    // Páginas
     for (let i = 1; i <= totalPages; i++) {
         if (i === page) {
             html += `<button class="active">${i}</button>`;
@@ -246,7 +381,6 @@ function renderPagination(total, page, limit) {
         }
     }
 
-    // Botón siguiente
     if (page < totalPages) {
         html += `<button onclick="goToPage(${page + 1})">Siguiente</button>`;
     }
@@ -289,6 +423,15 @@ function formatStatus(status) {
         'error': 'Error'
     };
     return statusMap[status] || status;
+}
+
+function formatTipo(tipo) {
+    const tipoMap = {
+        'carga': 'CARGA',
+        'descarga': 'DESCARGA',
+        'crear_usuario': 'CREAR'
+    };
+    return tipoMap[tipo] || tipo.toUpperCase();
 }
 
 function escapeHtml(text) {

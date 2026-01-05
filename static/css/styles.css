@@ -3,9 +3,14 @@
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
     --success-color: #10b981;
+    --success-hover: #059669;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
+    --danger-color: #dc2626;
+    --danger-hover: #b91c1c;
     --processing-color: #8b5cf6;
+    --info-color: #0ea5e9;
+    --info-hover: #0284c7;
     --bg-color: #f3f4f6;
     --card-bg: #ffffff;
     --text-color: #1f2937;
@@ -31,7 +36,7 @@ body {
 
 /* ============== CONTAINER ============== */
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -42,7 +47,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background: var(--card-bg);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 12px;
     box-shadow: var(--shadow);
     margin-bottom: 24px;
@@ -51,7 +56,7 @@ body {
 .header h1 {
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--text-color);
+    color: white;
 }
 
 .status-indicator {
@@ -59,14 +64,14 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: #f0fdf4;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 20px;
 }
 
 .status-dot {
     width: 10px;
     height: 10px;
-    background: var(--success-color);
+    background: #10b981;
     border-radius: 50%;
     animation: pulse 2s infinite;
 }
@@ -79,7 +84,7 @@ body {
 .status-text {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--success-color);
+    color: white;
 }
 
 /* ============== MAIN CONTENT ============== */
@@ -88,46 +93,70 @@ body {
     gap: 24px;
 }
 
+/* ============== FORMS GRID ============== */
+.forms-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .forms-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .forms-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ============== CARDS ============== */
 .card {
     background: var(--card-bg);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: var(--shadow);
 }
 
 .card h2 {
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     color: var(--text-color);
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.form-card {
+    min-height: 220px;
 }
 
 /* ============== FORM ============== */
-.form-section form {
-    display: grid;
-    gap: 16px;
+.form-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .form-group label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-color);
+    color: var(--text-muted);
 }
 
 .form-group input {
-    padding: 12px 16px;
+    padding: 10px 12px;
     border: 2px solid var(--border-color);
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.875rem;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -137,19 +166,41 @@ body {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+/* Password group */
+.password-group {
+    display: flex;
+    gap: 8px;
+}
+
+.password-group input {
+    flex: 1;
+}
+
+.btn-generate {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-generate:hover {
+    background: var(--info-hover);
+}
+
 /* ============== BUTTONS ============== */
 .btn {
-    padding: 12px 24px;
+    padding: 10px 16px;
     border: none;
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .btn-primary {
@@ -159,13 +210,33 @@ body {
 
 .btn-primary:hover {
     background: var(--primary-hover);
-    transform: translateY(-1px);
 }
 
-.btn-primary:disabled {
-    background: var(--text-muted);
-    cursor: not-allowed;
-    transform: none;
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background: var(--success-hover);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--danger-hover);
+}
+
+.btn-info {
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-info:hover {
+    background: var(--info-hover);
 }
 
 .btn-secondary {
@@ -178,12 +249,49 @@ body {
     background: var(--border-color);
 }
 
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============== BUSCAR SECTION ============== */
+.buscar-section {
+    padding: 16px 20px;
+}
+
+.buscar-section h2 {
+    margin-bottom: 12px;
+}
+
+.buscar-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.buscar-form .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    .buscar-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
 /* ============== MESSAGES ============== */
 .message {
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: 8px;
-    margin-top: 16px;
-    font-size: 0.875rem;
+    margin-top: 12px;
+    font-size: 0.8rem;
 }
 
 .message.success {
@@ -198,30 +306,48 @@ body {
     border: 1px solid #fecaca;
 }
 
+.message.info {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
 /* ============== STATS ============== */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .stat-item {
     background: var(--bg-color);
-    padding: 20px;
+    padding: 16px;
     border-radius: 10px;
     text-align: center;
 }
 
 .stat-value {
     display: block;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-color);
 }
 
 .stat-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -232,8 +358,14 @@ body {
 .stat-pending .stat-value { color: var(--warning-color); }
 .stat-processing .stat-value { color: var(--processing-color); }
 .stat-error .stat-value { color: var(--error-color); }
-.stat-total-fichas { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.stat-total-fichas .stat-value, .stat-total-fichas .stat-label { color: white; }
+
+.stat-total-cargado {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.stat-total-cargado .stat-value,
+.stat-total-cargado .stat-label {
+    color: white;
+}
 
 /* ============== QUEUE ============== */
 .queue-status {
@@ -261,14 +393,14 @@ body {
 .queue-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .queue-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
+    padding: 14px;
     background: var(--bg-color);
     border-radius: 8px;
     border-left: 4px solid var(--warning-color);
@@ -281,8 +413,31 @@ body {
 
 .queue-item-info {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 12px;
+}
+
+.queue-item-type {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.queue-item-type.carga {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.queue-item-type.descarga {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.queue-item-type.crear_usuario {
+    background: #dbeafe;
+    color: #1e40af;
 }
 
 .queue-item-user {
@@ -291,14 +446,14 @@ body {
 }
 
 .queue-item-amount {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
 .queue-item-status {
     padding: 4px 12px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
 }
@@ -315,7 +470,7 @@ body {
 
 .empty-queue {
     text-align: center;
-    padding: 40px;
+    padding: 30px;
     color: var(--text-muted);
 }
 
@@ -347,7 +502,7 @@ body {
 
 .operations-table th,
 .operations-table td {
-    padding: 12px 16px;
+    padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
 }
@@ -355,26 +510,50 @@ body {
 .operations-table th {
     background: var(--bg-color);
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
 }
 
 .operations-table td {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .operations-table tr:hover {
     background: var(--bg-color);
 }
 
+/* Type badges */
+.type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+.type-badge.carga {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.type-badge.descarga {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.type-badge.crear_usuario {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
 /* Status badges */
 .status-badge {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 3px 10px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
 }
@@ -408,12 +587,12 @@ body {
 }
 
 .pagination button {
-    padding: 8px 16px;
+    padding: 8px 14px;
     border: 2px solid var(--border-color);
     border-radius: 6px;
     background: white;
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .pagination button:hover {
@@ -431,7 +610,7 @@ body {
     text-align: center;
     padding: 24px;
     color: var(--text-muted);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     margin-top: 24px;
 }
 
@@ -447,10 +626,6 @@ body {
         font-size: 1.5rem;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .filters {
         flex-direction: column;
     }
@@ -458,6 +633,6 @@ body {
     .operations-table th,
     .operations-table td {
         padding: 8px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 }

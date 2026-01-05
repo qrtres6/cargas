@@ -78,6 +78,7 @@ def cargar_fichas():
 
         # Crear operación en base de datos
         operacion = Operacion(
+            tipo='carga',
             usuario_destino=usuario,
             monto=monto,
             estado='pendiente',
@@ -90,7 +91,8 @@ def cargar_fichas():
         queue_manager.agregar_tarea(
             operacion_id=operacion.id,
             usuario_destino=usuario,
-            monto=monto
+            monto=monto,
+            tipo='carga'
         )
 
         logger.info(f"Nueva carga solicitada: {usuario} - {monto} fichas por {asesor}")
@@ -104,6 +106,119 @@ def cargar_fichas():
 
     except Exception as e:
         logger.error(f"Error en /api/cargar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/descargar', methods=['POST'])
+def descargar_fichas():
+    """
+    Endpoint para solicitar descarga de fichas
+    Body: { "usuario": "nombre_usuario", "monto": 100 }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
+
+        usuario = data.get('usuario', '').strip()
+        monto = data.get('monto')
+
+        # Validaciones
+        if not usuario:
+            return jsonify({'success': False, 'error': 'El usuario es requerido'}), 400
+
+        if not monto or monto <= 0:
+            return jsonify({'success': False, 'error': 'El monto debe ser mayor a 0'}), 400
+
+        try:
+            monto = float(monto)
+        except ValueError:
+            return jsonify({'success': False, 'error': 'El monto debe ser un número válido'}), 400
+
+        # Crear operación en base de datos
+        operacion = Operacion(
+            tipo='descarga',
+            usuario_destino=usuario,
+            monto=monto,
+            estado='pendiente'
+        )
+        db.session.add(operacion)
+        db.session.commit()
+
+        # Agregar a la cola de tareas
+        queue_manager.agregar_tarea(
+            operacion_id=operacion.id,
+            usuario_destino=usuario,
+            monto=monto,
+            tipo='descarga'
+        )
+
+        logger.info(f"Nueva descarga solicitada: {usuario} - {monto} fichas")
+
+        return jsonify({
+            'success': True,
+            'message': 'Descarga agregada a la cola',
+            'operacion_id': operacion.id,
+            'posicion_cola': queue_manager.obtener_estado()['tareas_pendientes']
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/descargar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/crear-usuario', methods=['POST'])
+def crear_usuario():
+    """
+    Endpoint para crear un nuevo usuario
+    Body: { "alias": "nombre_usuario", "password": "contraseña" }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
+
+        alias = data.get('alias', '').strip()
+        password = data.get('password', '').strip()
+
+        # Validaciones
+        if not alias:
+            return jsonify({'success': False, 'error': 'El alias es requerido'}), 400
+
+        if not password:
+            return jsonify({'success': False, 'error': 'La contraseña es requerida'}), 400
+
+        # Crear operación en base de datos
+        operacion = Operacion(
+            tipo='crear_usuario',
+            usuario_destino=alias,
+            estado='pendiente',
+            password_usuario=password
+        )
+        db.session.add(operacion)
+        db.session.commit()
+
+        # Agregar a la cola de tareas
+        queue_manager.agregar_tarea(
+            operacion_id=operacion.id,
+            usuario_destino=alias,
+            tipo='crear_usuario',
+            password=password
+        )
+
+        logger.info(f"Nueva creación de usuario solicitada: {alias}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Creación de usuario agregada a la cola',
+            'operacion_id': operacion.id,
+            'posicion_cola': queue_manager.obtener_estado()['tareas_pendientes']
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/crear-usuario: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -180,11 +295,16 @@ def estadisticas():
         en_proceso = Operacion.query.filter_by(estado='en_proceso').count()
         errores = Operacion.query.filter_by(estado='error').count()
 
-        # Total de fichas cargadas (solo completadas)
+        # Total de fichas cargadas (solo cargas completadas)
         from sqlalchemy import func
-        total_fichas = db.session.query(
+        total_cargado = db.session.query(
             func.sum(Operacion.monto)
-        ).filter_by(estado='completada').scalar() or 0
+        ).filter_by(estado='completada', tipo='carga').scalar() or 0
+
+        # Total de fichas descargadas (solo descargas completadas)
+        total_descargado = db.session.query(
+            func.sum(Operacion.monto)
+        ).filter_by(estado='completada', tipo='descarga').scalar() or 0
 
         return jsonify({
             'success': True,
@@ -194,7 +314,8 @@ def estadisticas():
                 'pendientes': pendientes,
                 'en_proceso': en_proceso,
                 'errores': errores,
-                'total_fichas_cargadas': float(total_fichas)
+                'total_cargado': float(total_cargado),
+                'total_descargado': float(total_descargado)
             }
         })
 

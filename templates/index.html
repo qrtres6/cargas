@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Carga de Fichas</title>
+    <title>Gana en Casa - Sistema de Gestión</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>Sistema de Carga de Fichas</h1>
+            <h1>Gana en Casa</h1>
             <div class="status-indicator" id="statusIndicator">
                 <span class="status-dot"></span>
                 <span class="status-text">Conectado</span>
@@ -19,24 +19,86 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Formulario de Carga -->
-            <section class="card form-section">
-                <h2>Nueva Carga de Fichas</h2>
-                <form id="cargaForm">
+            <!-- Sección de Formularios -->
+            <section class="forms-grid">
+                <!-- Cargar Fichas -->
+                <div class="card form-card">
+                    <h2>Cargar Fichas</h2>
+                    <form id="cargaForm">
+                        <div class="form-group">
+                            <label for="usuarioCarga">Usuario:</label>
+                            <input type="text" id="usuarioCarga" name="usuario" placeholder="Nombre de usuario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="montoCarga">Monto:</label>
+                            <input type="number" id="montoCarga" name="monto" placeholder="100" min="1" step="0.01" required>
+                        </div>
+                        <button type="submit" class="btn btn-success" id="btnCargar">
+                            <span class="btn-text">+ Cargar</span>
+                            <span class="btn-loading" style="display:none;">...</span>
+                        </button>
+                    </form>
+                    <div id="cargaMessage" class="message" style="display:none;"></div>
+                </div>
+
+                <!-- Descargar Fichas -->
+                <div class="card form-card">
+                    <h2>Descargar Fichas</h2>
+                    <form id="descargaForm">
+                        <div class="form-group">
+                            <label for="usuarioDescarga">Usuario:</label>
+                            <input type="text" id="usuarioDescarga" name="usuario" placeholder="Nombre de usuario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="montoDescarga">Monto:</label>
+                            <input type="number" id="montoDescarga" name="monto" placeholder="100" min="1" step="0.01" required>
+                        </div>
+                        <button type="submit" class="btn btn-danger" id="btnDescargar">
+                            <span class="btn-text">- Descargar</span>
+                            <span class="btn-loading" style="display:none;">...</span>
+                        </button>
+                    </form>
+                    <div id="descargaMessage" class="message" style="display:none;"></div>
+                </div>
+
+                <!-- Crear Usuario -->
+                <div class="card form-card">
+                    <h2>Crear Usuario</h2>
+                    <form id="crearUsuarioForm">
+                        <div class="form-group">
+                            <label for="aliasUsuario">Alias:</label>
+                            <input type="text" id="aliasUsuario" name="alias" placeholder="Nombre de usuario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="passwordUsuario">Contraseña:</label>
+                            <div class="password-group">
+                                <input type="text" id="passwordUsuario" name="password" placeholder="Contraseña" required>
+                                <button type="button" class="btn btn-small btn-generate" id="btnGenerarPass">123Generar</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btnCrearUsuario">
+                            <span class="btn-text">+ Crear Usuario</span>
+                            <span class="btn-loading" style="display:none;">...</span>
+                        </button>
+                    </form>
+                    <div id="crearUsuarioMessage" class="message" style="display:none;"></div>
+                </div>
+            </section>
+
+            <!-- Buscar Retiros -->
+            <section class="card buscar-section">
+                <h2>Buscar Retiros</h2>
+                <form id="buscarRetirosForm" class="buscar-form">
                     <div class="form-group">
-                        <label for="usuario">Usuario a Cargar:</label>
-                        <input type="text" id="usuario" name="usuario" placeholder="Nombre de usuario" required>
+                        <label for="usuarioBuscar">Usuario:</label>
+                        <input type="text" id="usuarioBuscar" name="usuario" placeholder="Nombre de usuario">
                     </div>
-                    <div class="form-group">
-                        <label for="monto">Monto de Fichas:</label>
-                        <input type="number" id="monto" name="monto" placeholder="100" min="1" step="0.01" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="btnCargar">
-                        <span class="btn-text">Cargar Fichas</span>
-                        <span class="btn-loading" style="display:none;">Procesando...</span>
+                    <button type="submit" class="btn btn-info" id="btnBuscarRetiros">
+                        <span class="btn-text">Buscar Retiros</span>
+                        <span class="btn-loading" style="display:none;">...</span>
                     </button>
                 </form>
-                <div id="formMessage" class="message" style="display:none;"></div>
+                <div id="buscarRetirosMessage" class="message" style="display:none;"></div>
             </section>
 
             <!-- Estadísticas -->
@@ -63,9 +125,9 @@
                         <span class="stat-value" id="statErrores">0</span>
                         <span class="stat-label">Errores</span>
                     </div>
-                    <div class="stat-item stat-total-fichas">
-                        <span class="stat-value" id="statTotalFichas">0</span>
-                        <span class="stat-label">Fichas Cargadas</span>
+                    <div class="stat-item stat-total-cargado">
+                        <span class="stat-value" id="statTotalCargado">$ 0</span>
+                        <span class="stat-label">Total Cargado</span>
                     </div>
                 </div>
             </section>
@@ -100,6 +162,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Tipo</th>
                                 <th>Usuario</th>
                                 <th>Monto</th>
                                 <th>Estado</th>
@@ -120,7 +183,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Sistema de Carga de Fichas v1.0</p>
+            <p>Gana en Casa - Sistema de Gestión v2.0</p>
         </footer>
     </div>
 
