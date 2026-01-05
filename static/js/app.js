@@ -334,6 +334,7 @@ function formatDate(dateStr) {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
     return date.toLocaleString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
         day: '2-digit',
         month: '2-digit',
         year: '2-digit',
