@@ -106,6 +106,21 @@
         }
         .summary-card.cargas .value { color: #16a34a; }
         .summary-card.descargas .value { color: #dc2626; }
+        .ultima-actividad {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .ultima-actividad.reciente {
+            color: #16a34a;
+        }
+        .ultima-actividad.advertencia {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        .ultima-actividad.alerta {
+            color: #dc2626;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +188,7 @@
                                 <th>Descargas</th>
                                 <th>Total Descargas</th>
                                 <th>Balance</th>
+                                <th>Ultima Actividad</th>
                             </tr>
                         </thead>
                         <tbody id="historialBody">
@@ -259,7 +275,7 @@
             if (historial.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
                             No hay datos para mostrar
                         </td>
                     </tr>
@@ -270,6 +286,7 @@
             tbody.innerHTML = historial.map(h => {
                 const balance = h.cargas.total - h.descargas.total;
                 const balanceClass = balance >= 0 ? 'monto-carga' : 'monto-descarga';
+                const ultimaInfo = formatUltimaActividad(h.ultima_actividad);
                 return `
                     <tr>
                         <td><strong>${escapeHtml(h.usuario)}</strong></td>
@@ -278,9 +295,40 @@
                         <td><span class="badge-cantidad">${h.descargas.cantidad}</span></td>
                         <td class="monto-descarga">${formatCurrency(h.descargas.total)}</td>
                         <td class="${balanceClass}">${formatCurrency(balance)}</td>
+                        <td class="ultima-actividad ${ultimaInfo.clase}">${ultimaInfo.texto}</td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        function formatUltimaActividad(fechaStr) {
+            if (!fechaStr) return { texto: '-', clase: '' };
+
+            const fecha = new Date(fechaStr + 'Z');
+            const ahora = new Date();
+            const diffMs = ahora - fecha;
+            const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDias = Math.floor(diffHoras / 24);
+
+            let texto, clase;
+
+            if (diffHoras < 24) {
+                texto = `Hace ${diffHoras} hora${diffHoras !== 1 ? 's' : ''}`;
+                clase = 'reciente';
+            } else if (diffDias < 7) {
+                texto = `Hace ${diffDias} dia${diffDias !== 1 ? 's' : ''}`;
+                clase = diffDias >= 3 ? 'advertencia' : 'reciente';
+            } else if (diffDias < 30) {
+                const semanas = Math.floor(diffDias / 7);
+                texto = `Hace ${semanas} semana${semanas !== 1 ? 's' : ''}`;
+                clase = 'advertencia';
+            } else {
+                const meses = Math.floor(diffDias / 30);
+                texto = `Hace ${meses} mes${meses !== 1 ? 'es' : ''}`;
+                clase = 'alerta';
+            }
+
+            return { texto, clase };
         }
 
         function updateSummary(historial) {

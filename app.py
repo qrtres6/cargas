@@ -463,15 +463,29 @@ def historial_agrupado():
             Operacion.usuario_destino
         ).all()
 
+        # Obtener última actividad por usuario
+        ultima_actividad = db.session.query(
+            Operacion.usuario_destino,
+            func.max(Operacion.fecha_creacion).label('ultima_fecha')
+        ).filter(
+            Operacion.estado == 'completada'
+        ).group_by(
+            Operacion.usuario_destino
+        ).all()
+
+        ultimas_fechas = {u.usuario_destino: u.ultima_fecha for u in ultima_actividad}
+
         # Formatear resultados
         historial = {}
         for r in resultados:
             usuario = r.usuario_destino
             if usuario not in historial:
+                ultima = ultimas_fechas.get(usuario)
                 historial[usuario] = {
                     'usuario': usuario,
                     'cargas': {'cantidad': 0, 'total': 0},
-                    'descargas': {'cantidad': 0, 'total': 0}
+                    'descargas': {'cantidad': 0, 'total': 0},
+                    'ultima_actividad': ultima.isoformat() if ultima else None
                 }
 
             if r.tipo == 'carga':
