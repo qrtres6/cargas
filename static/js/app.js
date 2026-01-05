@@ -135,7 +135,7 @@ async function loadStats() {
             document.getElementById('statPendientes').textContent = stats.pendientes;
             document.getElementById('statEnProceso').textContent = stats.en_proceso;
             document.getElementById('statErrores').textContent = stats.errores;
-            document.getElementById('statTotalFichas').textContent = formatNumber(stats.total_fichas_cargadas);
+            document.getElementById('statTotalFichas').textContent = formatCurrency(stats.total_fichas_cargadas);
         }
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
@@ -191,7 +191,7 @@ async function loadQueue() {
                         <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
                             <div class="queue-item-info">
                                 <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
-                                <span class="queue-item-amount">${tipoLabel}: ${formatNumber(op.monto)} fichas</span>
+                                <span class="queue-item-amount">${tipoLabel}: ${formatCurrency(op.monto)}</span>
                             </div>
                             <div class="queue-item-time">
                                 ${tiempoInfo}
@@ -284,7 +284,7 @@ function renderOperations(operations) {
             <td><strong>#${op.id}</strong></td>
             <td><span class="tipo-badge ${op.tipo || 'carga'}">${formatTipo(op.tipo)}</span></td>
             <td>${escapeHtml(op.usuario_destino)}</td>
-            <td><strong>${formatNumber(op.monto)}</strong></td>
+            <td><strong>${formatCurrency(op.monto)}</strong></td>
             <td><span class="status-badge ${op.estado}">${formatStatus(op.estado)}</span></td>
             <td>${formatDate(op.fecha_creacion)}</td>
             <td title="${escapeHtml(op.mensaje || '')}">${truncate(op.mensaje || '-', 30)}</td>
@@ -348,6 +348,15 @@ function startAutoRefresh() {
 // ============== UTILIDADES ==============
 function formatNumber(num) {
     return new Intl.NumberFormat('es-AR').format(num);
+}
+
+function formatCurrency(num) {
+    return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(num);
 }
 
 function formatDate(dateStr) {
