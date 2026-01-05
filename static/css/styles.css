@@ -91,8 +91,14 @@ body {
 /* ============== FORMS ROW ============== */
 .forms-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 1024px) {
+    .forms-row {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -241,7 +247,7 @@ body {
 
 /* Formulario de Usuario */
 .form-usuario {
-    max-width: 500px;
+    /* En la misma fila que carga y descarga */
 }
 
 .form-usuario h2 {
