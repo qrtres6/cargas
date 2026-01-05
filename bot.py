@@ -444,49 +444,68 @@ class AgentesNetBot:
             'message': ''
         }
 
-        try:
-            self.iniciar_navegador()
+        max_reintentos = 2
+        for intento in range(max_reintentos):
+            try:
+                self.iniciar_navegador()
 
-            # Login (salta si ya está logueado)
-            resultados['login'] = self.login()
-            if not resultados['login']['success']:
-                resultados['message'] = f"Error en login: {resultados['login']['message']}"
+                # Login (salta si ya está logueado)
+                resultados['login'] = self.login()
+                if not resultados['login']['success']:
+                    resultados['message'] = f"Error en login: {resultados['login']['message']}"
+                    self.forzar_cierre_navegador()
+                    if intento < max_reintentos - 1:
+                        logger.info(f"Reintentando... (intento {intento + 2}/{max_reintentos})")
+                        time.sleep(2)
+                        continue
+                    return resultados
+
+                # Buscar usuario
+                resultados['busqueda'] = self.buscar_usuario(nombre_usuario)
+                if not resultados['busqueda']['success']:
+                    # Si falla búsqueda, probablemente sesión expirada
+                    resultados['message'] = f"Error en búsqueda: {resultados['busqueda']['message']}"
+                    if intento < max_reintentos - 1:
+                        logger.info("Sesión posiblemente expirada, reiniciando...")
+                        self.forzar_cierre_navegador()
+                        time.sleep(2)
+                        continue
+                    return resultados
+
+                # Encontrar usuario en lista
+                resultados['seleccion'] = self.encontrar_usuario_en_lista(nombre_usuario)
+                if not resultados['seleccion']['success']:
+                    resultados['message'] = f"Usuario '{nombre_usuario}' no encontrado en AgentesNet"
+                    return resultados
+
+                # Cargar o descargar fichas según tipo
+                if tipo == 'descarga':
+                    resultados['operacion'] = self.descargar_fichas(monto)
+                    accion = 'Descarga'
+                else:
+                    resultados['operacion'] = self.cargar_fichas(monto)
+                    accion = 'Carga'
+
+                if not resultados['operacion']['success']:
+                    resultados['message'] = f"Error en {accion.lower()}: {resultados['operacion']['message']}"
+                    return resultados
+
+                resultados['success'] = True
+                resultados['message'] = f"{accion} exitosa: {monto} fichas {'de' if tipo == 'descarga' else 'a'} {nombre_usuario}"
+                AgentesNetBot._last_activity = time.time()
+                return resultados
+
+            except Exception as e:
+                logger.error(f"Error en intento {intento + 1}: {str(e)}")
                 self.forzar_cierre_navegador()
+                if intento < max_reintentos - 1:
+                    logger.info(f"Reintentando después de error... (intento {intento + 2}/{max_reintentos})")
+                    time.sleep(2)
+                    continue
+                resultados['message'] = f"Error general: {str(e)}"
                 return resultados
 
-            # Buscar usuario
-            resultados['busqueda'] = self.buscar_usuario(nombre_usuario)
-            if not resultados['busqueda']['success']:
-                resultados['message'] = f"Error en búsqueda: {resultados['busqueda']['message']}"
-                return resultados
-
-            # Encontrar usuario en lista
-            resultados['seleccion'] = self.encontrar_usuario_en_lista(nombre_usuario)
-            if not resultados['seleccion']['success']:
-                resultados['message'] = f"Error en selección: {resultados['seleccion']['message']}"
-                return resultados
-
-            # Cargar o descargar fichas según tipo
-            if tipo == 'descarga':
-                resultados['operacion'] = self.descargar_fichas(monto)
-                accion = 'Descarga'
-            else:
-                resultados['operacion'] = self.cargar_fichas(monto)
-                accion = 'Carga'
-
-            if not resultados['operacion']['success']:
-                resultados['message'] = f"Error en {accion.lower()}: {resultados['operacion']['message']}"
-                return resultados
-
-            resultados['success'] = True
-            resultados['message'] = f"{accion} exitosa: {monto} fichas {'de' if tipo == 'descarga' else 'a'} {nombre_usuario}"
-            AgentesNetBot._last_activity = time.time()
-            return resultados
-
-        except Exception as e:
-            resultados['message'] = f"Error general: {str(e)}"
-            self.forzar_cierre_navegador()
-            return resultados
+        return resultados
 
 
 # Para pruebas directas
