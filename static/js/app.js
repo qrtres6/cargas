@@ -161,9 +161,9 @@ async function loadQueue() {
                 queueList.innerHTML = '<div class="empty-queue">No hay tareas pendientes</div>';
             } else {
                 queueList.innerHTML = data.cola.map((op, index) => {
-                    // Registrar tiempo de inicio si está en proceso
+                    // Registrar tiempo de inicio si está en proceso (usar tiempo local)
                     if (op.estado === 'en_proceso' && !processStartTimes[op.id]) {
-                        processStartTimes[op.id] = op.fecha_proceso ? new Date(op.fecha_proceso) : new Date();
+                        processStartTimes[op.id] = Date.now(); // Usar timestamp actual
                     }
 
                     // Calcular tiempo restante para la tarea actual
@@ -220,12 +220,12 @@ function updateCountdowns() {
         const startTime = processStartTimes[id];
 
         if (startTime) {
-            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const remaining = Math.max(0, ESTIMATED_PROCESS_TIME - elapsed);
 
             if (remaining > 0) {
                 el.textContent = `~${remaining}s restantes`;
-                el.style.color = remaining < 10 ? '#4caf50' : '#ff9800';
+                el.style.color = remaining < 5 ? '#4caf50' : '#ff9800';
             } else {
                 el.textContent = 'Finalizando...';
                 el.style.color = '#4caf50';
