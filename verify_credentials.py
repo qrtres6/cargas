@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script para verificar las credenciales de AgentesNet
+Script para verificar las credenciales de Gana en Casa
 Ejecuta un login de prueba para confirmar que las credenciales son correctas
 """
 
@@ -247,9 +247,9 @@ def verificar_login():
 
 def main():
     print("")
-    print(f"{Colors.BLUE}========================================{Colors.END}")
-    print(f"{Colors.BLUE}  Verificación de Credenciales BET{Colors.END}")
-    print(f"{Colors.BLUE}========================================{Colors.END}")
+    print(f"{Colors.BLUE}=============================================={Colors.END}")
+    print(f"{Colors.BLUE}  Verificación de Credenciales Gana en Casa{Colors.END}")
+    print(f"{Colors.BLUE}=============================================={Colors.END}")
     print("")
 
     # Verificar configuración

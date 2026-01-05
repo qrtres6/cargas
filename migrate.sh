@@ -45,19 +45,19 @@ fi
 # ============================================
 # PASO 1: Solicitar credenciales
 # ============================================
-echo -e "${YELLOW}PASO 1: Configuración de Credenciales BET${NC}"
-echo "----------------------------------------"
+echo -e "${YELLOW}PASO 1: Configuración de Credenciales Gana en Casa${NC}"
+echo "---------------------------------------------------"
 echo ""
 
 # Usuario
-read -p "Ingresa el USUARIO de AgentesNet: " BET_USER
+read -p "Ingresa el USUARIO de Gana en Casa: " BET_USER
 if [ -z "$BET_USER" ]; then
     error "El usuario no puede estar vacío"
     exit 1
 fi
 
 # Contraseña (oculta)
-read -s -p "Ingresa la CONTRASEÑA de AgentesNet: " BET_PASSWORD
+read -s -p "Ingresa la CONTRASEÑA de Gana en Casa: " BET_PASSWORD
 echo ""
 if [ -z "$BET_PASSWORD" ]; then
     error "La contraseña no puede estar vacía"
@@ -74,7 +74,7 @@ fi
 
 # URL (opcional, usar default)
 echo ""
-read -p "URL de AgentesNet [https://www.agentesbet.net/agents]: " BET_URL
+read -p "URL de Gana en Casa [https://www.agentesbet.net/agents]: " BET_URL
 BET_URL=${BET_URL:-"https://www.agentesbet.net/agents"}
 
 # Puerto del servidor
@@ -104,7 +104,7 @@ fi
 
 # Crear nuevo .env
 cat > .env << EOF
-# Credenciales de AgentesNet
+# Credenciales de Gana en Casa
 # Configurado el: $(date '+%Y-%m-%d %H:%M:%S')
 AGENTES_URL=$BET_URL
 AGENTES_USER=$BET_USER
@@ -188,8 +188,8 @@ success "Chromium instalado"
 # PASO 6: Verificar credenciales
 # ============================================
 echo ""
-echo -e "${YELLOW}PASO 6: Verificando credenciales de AgentesNet${NC}"
-echo "-----------------------------------------------"
+echo -e "${YELLOW}PASO 6: Verificando credenciales de Gana en Casa${NC}"
+echo "------------------------------------------------"
 echo ""
 read -p "¿Deseas verificar las credenciales ahora? (S/n): " VERIFY_CREDS
 VERIFY_CREDS=${VERIFY_CREDS:-"s"}
