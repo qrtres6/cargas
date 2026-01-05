@@ -21,19 +21,27 @@ document.addEventListener('DOMContentLoaded', () => {
     startAutoRefresh();
 });
 
-// ============== FORMULARIO ==============
+// ============== FORMULARIOS ==============
 function initForm() {
-    const form = document.getElementById('cargaForm');
-    form.addEventListener('submit', handleFormSubmit);
+    // Formulario de Carga
+    const cargaForm = document.getElementById('cargaForm');
+    cargaForm.addEventListener('submit', (e) => handleFormSubmit(e, 'carga'));
+
+    // Formulario de Descarga
+    const descargaForm = document.getElementById('descargaForm');
+    descargaForm.addEventListener('submit', (e) => handleFormSubmit(e, 'descarga'));
 }
 
-async function handleFormSubmit(e) {
+async function handleFormSubmit(e, tipo) {
     e.preventDefault();
 
-    const btn = document.getElementById('btnCargar');
+    const isCarga = tipo === 'carga';
+    const btn = document.getElementById(isCarga ? 'btnCarga' : 'btnDescarga');
     const btnText = btn.querySelector('.btn-text');
     const btnLoading = btn.querySelector('.btn-loading');
-    const messageDiv = document.getElementById('formMessage');
+    const messageDiv = document.getElementById(isCarga ? 'cargaMessage' : 'descargaMessage');
+    const usuarioField = document.getElementById(isCarga ? 'usuarioCarga' : 'usuarioDescarga');
+    const montoField = document.getElementById(isCarga ? 'montoCarga' : 'montoDescarga');
 
     // Estado de carga
     btn.disabled = true;
@@ -43,9 +51,9 @@ async function handleFormSubmit(e) {
 
     // Obtener datos del formulario
     const formData = {
-        usuario: document.getElementById('usuario').value.trim(),
-        monto: parseFloat(document.getElementById('monto').value),
-        tipo: document.getElementById('tipo').value
+        usuario: usuarioField.value.trim(),
+        monto: parseFloat(montoField.value),
+        tipo: tipo
     };
 
     try {
@@ -60,12 +68,13 @@ async function handleFormSubmit(e) {
         const data = await response.json();
 
         if (data.success) {
+            const accion = isCarga ? 'Carga' : 'Descarga';
             showMessage(messageDiv, 'success',
-                `Carga agregada exitosamente! ID: ${data.operacion_id}. Posición en cola: ${data.posicion_cola}`);
+                `${accion} agregada! ID: ${data.operacion_id}. Posición: ${data.posicion_cola}`);
 
-            // Limpiar campos (excepto asesor)
-            document.getElementById('usuario').value = '';
-            document.getElementById('monto').value = '';
+            // Limpiar campos
+            usuarioField.value = '';
+            montoField.value = '';
 
             // Actualizar datos
             loadData();

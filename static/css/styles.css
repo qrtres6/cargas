@@ -88,6 +88,19 @@ body {
     gap: 24px;
 }
 
+/* ============== FORMS ROW ============== */
+.forms-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .forms-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ============== CARDS ============== */
 .card {
     background: var(--card-bg);
@@ -179,6 +192,51 @@ body {
 
 .btn-secondary:hover {
     background: var(--border-color);
+}
+
+/* Botón de Carga */
+.btn-carga {
+    background: var(--success-color);
+    color: white;
+    width: 100%;
+}
+
+.btn-carga:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.btn-carga:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Botón de Descarga */
+.btn-descarga {
+    background: #ec4899;
+    color: white;
+    width: 100%;
+}
+
+.btn-descarga:hover {
+    background: #db2777;
+    transform: translateY(-1px);
+}
+
+.btn-descarga:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Estilos de formularios */
+.form-carga h2 {
+    border-bottom-color: var(--success-color);
+}
+
+.form-descarga h2 {
+    border-bottom-color: #ec4899;
 }
 
 /* ============== MESSAGES ============== */
