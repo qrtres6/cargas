@@ -528,7 +528,7 @@ function renderUsuarios(usuarios) {
     tbody.innerHTML = usuarios.map(u => {
         const aliasFinal = u.alias_final || u.alias_solicitado;
         const copyBtn = u.estado === 'completada' ?
-            `<button class="btn btn-small btn-copy" onclick="copyCredentials('${escapeHtml(aliasFinal)}', '${escapeHtml(u.password)}')">Copiar</button>` :
+            `<button class="btn btn-small btn-copy" data-usuario="${escapeHtml(aliasFinal)}" data-password="${escapeHtml(u.password)}" onclick="copyCredentials(this)">Copiar</button>` :
             '';
         return `
         <tr>
@@ -544,20 +544,34 @@ function renderUsuarios(usuarios) {
     `}).join('');
 }
 
-function copyCredentials(usuario, password) {
-    const texto = `Usuario: ${usuario}\nContrasena: ${password}`;
-    navigator.clipboard.writeText(texto).then(() => {
-        alert('Credenciales copiadas!\\n\\n' + texto);
-    }).catch(err => {
-        // Fallback para navegadores sin clipboard API
-        const textarea = document.createElement('textarea');
-        textarea.value = texto;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        alert('Credenciales copiadas!\\n\\n' + texto);
-    });
+function copyCredentials(btn) {
+    const usuario = btn.getAttribute('data-usuario');
+    const password = btn.getAttribute('data-password');
+    const texto = 'Usuario: ' + usuario + '\nContrasena: ' + password;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(texto).then(() => {
+            btn.textContent = 'Copiado!';
+            setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+        }).catch(() => {
+            fallbackCopy(texto, btn);
+        });
+    } else {
+        fallbackCopy(texto, btn);
+    }
+}
+
+function fallbackCopy(texto, btn) {
+    const textarea = document.createElement('textarea');
+    textarea.value = texto;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
 }
 
 function renderPaginationUsuarios(total, page, limit) {
