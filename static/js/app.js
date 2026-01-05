@@ -525,14 +525,15 @@ function formatCurrency(num) {
 
 function formatDate(dateStr) {
     if (!dateStr) return '-';
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'Z'); // Asegurar que se interprete como UTC
     return date.toLocaleString('es-AR', {
         timeZone: 'America/Argentina/Buenos_Aires',
         day: '2-digit',
         month: '2-digit',
         year: '2-digit',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
     });
 }
 
