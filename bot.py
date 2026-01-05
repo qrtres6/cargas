@@ -223,14 +223,14 @@ class AgentesNetBot:
             # Hacer click en el campo primero, luego limpiar y escribir
             logger.info("Haciendo click en el campo de monto...")
             monto_input.click()
-            time.sleep(0.5)
+            time.sleep(0.3)
 
-            # Seleccionar todo y borrar
-            monto_input.press('Control+a')
+            # Triple click para seleccionar todo el contenido
+            monto_input.click(click_count=3)
             time.sleep(0.2)
 
-            # Escribir el monto
-            monto_input.fill(str(monto))
+            # Escribir el monto (reemplaza la selección)
+            monto_input.type(str(int(monto)))
             logger.info(f"Monto ingresado: {monto}")
 
             time.sleep(0.5)
