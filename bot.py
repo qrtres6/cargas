@@ -2,6 +2,7 @@
 Bot de automatización para carga de fichas en AgentesNet
 Utiliza Playwright para automatizar el navegador
 Selectores actualizados para Vuetify (Vue.js)
+OPTIMIZADO: Tiempos reducidos y sesión persistente
 """
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -16,15 +17,24 @@ logger = logging.getLogger(__name__)
 class AgentesNetBot:
     """Bot para automatizar carga de fichas en agentesbet.net"""
 
+    # Instancia compartida para reutilizar sesión
+    _instance = None
+    _browser = None
+    _page = None
+    _logged_in = False
+
     def __init__(self, headless=None):
         self.headless = headless if headless is not None else Config.HEADLESS
         self.timeout = Config.TIMEOUT
-        self.browser = None
-        self.page = None
-        self.logged_in = False
 
     def iniciar_navegador(self):
-        """Inicia el navegador Playwright"""
+        """Inicia el navegador Playwright (reutiliza si ya existe)"""
+        if AgentesNetBot._browser and AgentesNetBot._page:
+            logger.info("Reutilizando navegador existente")
+            self.browser = AgentesNetBot._browser
+            self.page = AgentesNetBot._page
+            return
+
         logger.info("Iniciando navegador...")
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.firefox.launch(
@@ -37,68 +47,72 @@ class AgentesNetBot:
         )
         self.page = self.context.new_page()
         self.page.set_default_timeout(self.timeout)
+
+        # Guardar referencia global
+        AgentesNetBot._browser = self.browser
+        AgentesNetBot._page = self.page
+        AgentesNetBot._playwright = self.playwright
+
         logger.info("Navegador iniciado correctamente")
 
     def cerrar_navegador(self):
-        """Cierra el navegador"""
-        if self.browser:
-            self.browser.close()
-            self.playwright.stop()
-            self.logged_in = False
+        """Cierra el navegador (solo si hay error, sino mantiene sesión)"""
+        pass  # No cerrar para reutilizar
+
+    def forzar_cierre_navegador(self):
+        """Fuerza el cierre del navegador"""
+        if AgentesNetBot._browser:
+            AgentesNetBot._browser.close()
+            AgentesNetBot._playwright.stop()
+            AgentesNetBot._browser = None
+            AgentesNetBot._page = None
+            AgentesNetBot._logged_in = False
             logger.info("Navegador cerrado")
 
     def login(self):
-        """Realiza el login en AgentesNet usando selectores Vuetify"""
+        """Realiza el login en AgentesNet (salta si ya está logueado)"""
+        # Verificar si ya está logueado
+        if AgentesNetBot._logged_in:
+            try:
+                search_field = self.page.locator('input[placeholder="Buscar usuario"]')
+                if search_field.is_visible(timeout=2000):
+                    logger.info("Ya está logueado, saltando login")
+                    return {'success': True, 'message': 'Sesión existente'}
+            except:
+                AgentesNetBot._logged_in = False
+
         try:
             logger.info(f"Navegando a {Config.AGENTES_URL}")
-            self.page.goto(Config.AGENTES_URL, wait_until='domcontentloaded', timeout=60000)
+            self.page.goto(Config.AGENTES_URL, wait_until='domcontentloaded', timeout=30000)
 
-            # Esperar a que cargue la página de login
-            time.sleep(2)
+            # Esperar mínimo a que cargue
+            time.sleep(0.5)
 
             # Campo de Alias (usuario)
-            logger.info("Buscando campo de Alias...")
             alias_input = self.page.locator('input[placeholder="Alias"]')
             alias_input.wait_for(state='visible', timeout=10000)
             alias_input.fill(Config.AGENTES_USER)
-            logger.info(f"Alias ingresado: {Config.AGENTES_USER}")
-
-            time.sleep(0.5)
 
             # Campo de Contraseña
-            logger.info("Buscando campo de Contraseña...")
             password_input = self.page.locator('input[placeholder="Contraseña"]')
-            password_input.wait_for(state='visible', timeout=10000)
+            password_input.wait_for(state='visible', timeout=5000)
             password_input.fill(Config.AGENTES_PASSWORD)
-            logger.info("Contraseña ingresada")
-
-            time.sleep(0.5)
 
             # Botón Iniciar sesión
-            logger.info("Buscando botón de Iniciar sesión...")
             login_btn = self.page.locator('button:has-text("Iniciar sesión")')
-            login_btn.wait_for(state='visible', timeout=10000)
+            login_btn.wait_for(state='visible', timeout=5000)
             login_btn.click()
             logger.info("Click en botón Iniciar sesión")
 
             # Esperar a que complete el login
-            time.sleep(3)
-            self.page.wait_for_load_state('networkidle')
+            time.sleep(1)
 
-            # Verificar si el login fue exitoso buscando el campo de búsqueda
-            try:
-                search_field = self.page.locator('input[placeholder="Buscar usuario"]')
-                search_field.wait_for(state='visible', timeout=10000)
-                self.logged_in = True
-                logger.info("Login exitoso - Campo de búsqueda visible")
-                return {'success': True, 'message': 'Login exitoso'}
-            except:
-                # Verificar si hay mensaje de error
-                error_msg = self.page.locator('.v-alert, .error-message, [role="alert"]')
-                if error_msg.count() > 0:
-                    error_text = error_msg.first.text_content()
-                    return {'success': False, 'message': f'Login falló: {error_text}'}
-                return {'success': False, 'message': 'Login falló - No se encontró campo de búsqueda'}
+            # Verificar si el login fue exitoso
+            search_field = self.page.locator('input[placeholder="Buscar usuario"]')
+            search_field.wait_for(state='visible', timeout=15000)
+            AgentesNetBot._logged_in = True
+            logger.info("Login exitoso")
+            return {'success': True, 'message': 'Login exitoso'}
 
         except PlaywrightTimeout as e:
             logger.error(f"Timeout durante login: {e}")
@@ -108,37 +122,31 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def buscar_usuario(self, nombre_usuario):
-        """Busca un usuario en el sistema usando selectores Vuetify"""
+        """Busca un usuario en el sistema (optimizado)"""
         try:
             logger.info(f"Buscando usuario: {nombre_usuario}")
 
             # Campo de búsqueda
             search_input = self.page.locator('input[placeholder="Buscar usuario"]')
-            search_input.wait_for(state='visible', timeout=10000)
+            search_input.wait_for(state='visible', timeout=5000)
             search_input.clear()
             search_input.fill(nombre_usuario)
-            logger.info(f"Usuario ingresado en búsqueda: {nombre_usuario}")
 
-            time.sleep(1)
+            time.sleep(0.3)
 
-            # Click en la lupa (icono mdi-magnify)
-            logger.info("Buscando botón de lupa...")
+            # Click en la lupa
             lupa_btn = self.page.locator('button:has(i.mdi-magnify)')
-            lupa_btn.wait_for(state='visible', timeout=10000)
+            lupa_btn.wait_for(state='visible', timeout=5000)
             lupa_btn.click()
-            logger.info("Click en lupa")
 
-            time.sleep(1)
+            time.sleep(0.3)
 
-            # Esperar a que aparezca el menú y seleccionar "Todos los jugadores"
-            logger.info("Buscando opción 'Todos los jugadores'...")
+            # Seleccionar "Todos los jugadores"
             todos_jugadores = self.page.locator('text="Todos los jugadores"')
-            todos_jugadores.wait_for(state='visible', timeout=10000)
+            todos_jugadores.wait_for(state='visible', timeout=5000)
             todos_jugadores.click()
-            logger.info("Click en 'Todos los jugadores'")
 
-            time.sleep(2)
-            self.page.wait_for_load_state('networkidle')
+            time.sleep(0.5)
 
             logger.info(f"Búsqueda de usuario {nombre_usuario} completada")
             return {'success': True, 'message': f'Usuario {nombre_usuario} buscado'}
@@ -151,111 +159,56 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def encontrar_usuario_en_lista(self, nombre_usuario):
-        """Encuentra y selecciona al usuario en la lista de resultados"""
+        """Encuentra y selecciona al usuario en la lista (optimizado)"""
         try:
-            logger.info(f"Buscando {nombre_usuario} en la lista de resultados...")
-            time.sleep(2)
+            logger.info(f"Buscando {nombre_usuario} en resultados...")
+            time.sleep(0.5)
 
-            # Buscar el usuario en la tabla de resultados
-            # Intentar diferentes selectores para encontrar la fila del usuario
-            usuario_selectors = [
-                f'tr:has-text("{nombre_usuario}")',
-                f'td:has-text("{nombre_usuario}")',
-                f'.v-data-table tr:has-text("{nombre_usuario}")',
-                f'text="{nombre_usuario}"'
-            ]
+            # Buscar directamente por texto
+            usuario_elemento = self.page.locator(f'text="{nombre_usuario}"').first
+            usuario_elemento.wait_for(state='visible', timeout=5000)
+            usuario_elemento.click()
 
-            usuario_fila = None
-            for selector in usuario_selectors:
-                try:
-                    elemento = self.page.locator(selector).first
-                    if elemento.is_visible(timeout=2000):
-                        usuario_fila = elemento
-                        logger.info(f"Usuario encontrado con selector: {selector}")
-                        break
-                except:
-                    continue
-
-            if usuario_fila:
-                # Click en la fila para seleccionar el usuario
-                usuario_fila.click()
-                time.sleep(1)
-                logger.info(f"Usuario {nombre_usuario} seleccionado")
-                return {'success': True, 'message': f'Usuario {nombre_usuario} encontrado y seleccionado'}
-            else:
-                logger.warning(f"Usuario {nombre_usuario} no encontrado en la lista")
-                return {'success': False, 'message': f'Usuario {nombre_usuario} no encontrado en la lista'}
+            time.sleep(0.3)
+            logger.info(f"Usuario {nombre_usuario} seleccionado")
+            return {'success': True, 'message': f'Usuario {nombre_usuario} encontrado'}
 
         except Exception as e:
-            logger.error(f"Error encontrando usuario en lista: {e}")
+            logger.error(f"Error encontrando usuario: {e}")
             return {'success': False, 'message': str(e)}
 
     def cargar_fichas(self, monto):
-        """Carga fichas al usuario seleccionado usando selectores Vuetify"""
+        """Carga fichas al usuario seleccionado (optimizado)"""
         try:
-            logger.info(f"Iniciando carga de {monto} fichas...")
+            logger.info(f"Cargando {monto} fichas...")
 
-            # Buscar botón de cargar fichas (icono mdi-cash-plus)
-            logger.info("Buscando botón de cargar fichas...")
+            # Click en botón de cargar
             cargar_btn = self.page.locator('button:has(i.mdi-cash-plus)')
-            cargar_btn.wait_for(state='visible', timeout=10000)
+            cargar_btn.wait_for(state='visible', timeout=5000)
             cargar_btn.first.click()
-            logger.info("Click en botón de cargar fichas")
 
-            # Esperar que el modal cargue
-            time.sleep(3)
-            logger.info("Buscando campo de monto...")
+            time.sleep(1)
 
-            monto_input = None
+            # Buscar campo de monto
+            monto_input = self.page.locator('input[placeholder="10"]')
+            monto_input.wait_for(state='visible', timeout=5000)
 
-            # Buscar directamente el input con placeholder="10"
-            try:
-                elemento = self.page.locator('input[placeholder="10"]')
-                elemento.wait_for(state='visible', timeout=10000)
-                monto_input = elemento
-                logger.info("Campo de monto encontrado con placeholder='10'")
-            except Exception as e:
-                logger.info(f"No se encontró con placeholder='10': {e}")
-
-            if not monto_input:
-                raise Exception("No se encontró el campo para ingresar el monto")
-
-            # Hacer click en el campo primero, luego limpiar y escribir
-            logger.info("Haciendo click en el campo de monto...")
-            monto_input.click()
-            time.sleep(0.3)
-
-            # Triple click para seleccionar todo el contenido
+            # Triple click y escribir
             monto_input.click(click_count=3)
+            time.sleep(0.1)
+            monto_input.type(str(int(monto)))
+
             time.sleep(0.2)
 
-            # Escribir el monto (reemplaza la selección)
-            monto_input.type(str(int(monto)))
-            logger.info(f"Monto ingresado: {monto}")
-
-            time.sleep(0.5)
-
-            # Buscar y hacer click en botón Enviar
-            logger.info("Buscando botón Enviar...")
+            # Click en Enviar
             enviar_btn = self.page.locator('button:has-text("Enviar")')
-            enviar_btn.wait_for(state='visible', timeout=10000)
+            enviar_btn.wait_for(state='visible', timeout=5000)
             enviar_btn.click()
-            logger.info("Click en botón Enviar")
 
-            time.sleep(3)
-            self.page.wait_for_load_state('networkidle')
-
-            # Verificar si la carga fue exitosa
-            # Buscar mensaje de éxito o que el modal se haya cerrado
-            try:
-                success_msg = self.page.locator('.v-snackbar:has-text("éxito"), .v-alert--success, [role="alert"]:has-text("éxito")')
-                if success_msg.count() > 0:
-                    logger.info("Mensaje de éxito detectado")
-            except:
-                pass
+            time.sleep(1)
 
             logger.info(f"Carga de {monto} fichas completada")
-            return {'success': True, 'message': f'Carga de {monto} fichas completada exitosamente'}
+            return {'success': True, 'message': f'Carga de {monto} fichas completada'}
 
         except PlaywrightTimeout as e:
             logger.error(f"Timeout cargando fichas: {e}")
@@ -265,7 +218,7 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def ejecutar_carga_completa(self, nombre_usuario, monto):
-        """Ejecuta el proceso completo de carga de fichas"""
+        """Ejecuta el proceso completo de carga de fichas (optimizado)"""
         resultados = {
             'login': None,
             'busqueda': None,
@@ -278,10 +231,11 @@ class AgentesNetBot:
         try:
             self.iniciar_navegador()
 
-            # Login
+            # Login (salta si ya está logueado)
             resultados['login'] = self.login()
             if not resultados['login']['success']:
                 resultados['message'] = f"Error en login: {resultados['login']['message']}"
+                self.forzar_cierre_navegador()
                 return resultados
 
             # Buscar usuario
@@ -308,10 +262,8 @@ class AgentesNetBot:
 
         except Exception as e:
             resultados['message'] = f"Error general: {str(e)}"
+            self.forzar_cierre_navegador()
             return resultados
-
-        finally:
-            self.cerrar_navegador()
 
 
 # Para pruebas directas

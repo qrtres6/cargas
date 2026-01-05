@@ -5,7 +5,7 @@
 // ============== CONFIGURACIÓN ==============
 const API_BASE = '';
 const REFRESH_INTERVAL = 5000; // 5 segundos
-const ESTIMATED_PROCESS_TIME = 35; // Tiempo estimado de carga en segundos
+const ESTIMATED_PROCESS_TIME = 15; // Tiempo estimado de carga en segundos (optimizado)
 
 // ============== ESTADO DE LA APLICACIÓN ==============
 let currentPage = 1;
