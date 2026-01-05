@@ -61,15 +61,23 @@ class AgentesNetBot:
         pass  # No cerrar para reutilizar
 
     def forzar_cierre_navegador(self):
-        """Fuerza el cierre del navegador"""
+        """Fuerza el cierre del navegador (maneja errores de threading)"""
         if AgentesNetBot._browser:
-            AgentesNetBot._browser.close()
-            AgentesNetBot._playwright.stop()
+            try:
+                AgentesNetBot._browser.close()
+            except Exception as e:
+                logger.warning(f"Error cerrando browser (puede ser de otro thread): {e}")
+            try:
+                AgentesNetBot._playwright.stop()
+            except Exception as e:
+                logger.warning(f"Error deteniendo playwright: {e}")
+            # Siempre limpiar las referencias
             AgentesNetBot._browser = None
             AgentesNetBot._page = None
             AgentesNetBot._logged_in = False
             AgentesNetBot._last_activity = None
-            logger.info("Navegador cerrado")
+            AgentesNetBot._playwright = None
+            logger.info("Referencias del navegador limpiadas")
 
     @classmethod
     def is_logged_in(cls):
@@ -78,18 +86,24 @@ class AgentesNetBot:
 
     @classmethod
     def force_logout(cls):
-        """Fuerza el cierre de sesión"""
+        """Fuerza el cierre de sesión (maneja errores de threading)"""
         if cls._browser:
             try:
                 cls._browser.close()
-                cls._playwright.stop()
-            except:
-                pass
-            cls._browser = None
-            cls._page = None
-            cls._logged_in = False
-            cls._last_activity = None
-            logger.info("Sesión cerrada forzadamente")
+            except Exception as e:
+                logger.warning(f"Error cerrando browser en logout: {e}")
+            try:
+                if cls._playwright:
+                    cls._playwright.stop()
+            except Exception as e:
+                logger.warning(f"Error deteniendo playwright en logout: {e}")
+        # Siempre limpiar referencias
+        cls._browser = None
+        cls._page = None
+        cls._logged_in = False
+        cls._last_activity = None
+        cls._playwright = None
+        logger.info("Sesión cerrada forzadamente")
         return {'success': True, 'message': 'Sesión cerrada'}
 
     def force_login(self):
@@ -387,6 +401,9 @@ class AgentesNetBot:
             'alias_final': alias
         }
 
+        # Siempre cerrar sesión previa para evitar problemas de threading
+        self.forzar_cierre_navegador()
+
         try:
             self.iniciar_navegador()
 
@@ -444,12 +461,15 @@ class AgentesNetBot:
             'message': ''
         }
 
+        # Siempre cerrar sesión previa para evitar problemas de threading
+        self.forzar_cierre_navegador()
+
         max_reintentos = 2
         for intento in range(max_reintentos):
             try:
                 self.iniciar_navegador()
 
-                # Login (salta si ya está logueado)
+                # Login (siempre hacer login fresco)
                 resultados['login'] = self.login()
                 if not resultados['login']['success']:
                     resultados['message'] = f"Error en login: {resultados['login']['message']}"
