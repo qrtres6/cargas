@@ -365,6 +365,78 @@ body {
     background: #d97706;
 }
 
+.btn-copy {
+    background: #10b981;
+    color: white;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+}
+
+.btn-copy:hover {
+    background: #059669;
+}
+
+.btn-retiros {
+    background: #7c3aed;
+    color: white;
+    width: 100%;
+}
+
+.btn-retiros:hover {
+    background: #6d28d9;
+}
+
+.form-retiros {
+    margin-top: 20px;
+}
+
+.form-retiros h2 {
+    border-bottom-color: #7c3aed;
+}
+
+.retiros-resultado {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.retiros-resultado h4 {
+    margin: 0 0 10px 0;
+    color: #334155;
+}
+
+.retiros-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.retiros-lista li {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.retiros-lista li:last-child {
+    border-bottom: none;
+}
+
+.retiro-reciente {
+    background: #fef2f2;
+}
+
+.badge-reciente {
+    background: #dc2626;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
 /* Historial de Usuarios */
 .history-usuarios h2 {
     border-bottom-color: #8b5cf6;

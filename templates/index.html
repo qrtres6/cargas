@@ -92,6 +92,23 @@
                 </section>
             </div>
 
+            <!-- Buscar Retiros -->
+            <section class="card form-section form-retiros">
+                <h2>Buscar Retiros</h2>
+                <form id="retirosForm">
+                    <div class="form-group">
+                        <label for="usuarioRetiros">Usuario:</label>
+                        <input type="text" id="usuarioRetiros" name="usuario" placeholder="Nombre de usuario" required>
+                    </div>
+                    <button type="submit" class="btn btn-retiros" id="btnRetiros">
+                        <span class="btn-text">Buscar Retiros</span>
+                        <span class="btn-loading" style="display:none;">Buscando...</span>
+                    </button>
+                </form>
+                <div id="retirosMessage" class="message" style="display:none;"></div>
+                <div id="retirosResultado" class="retiros-resultado" style="display:none;"></div>
+            </section>
+
             <!-- Estadísticas -->
             <section class="card stats-section">
                 <h2>Estadísticas</h2>
@@ -195,6 +212,7 @@
                                 <th>Estado</th>
                                 <th>Fecha</th>
                                 <th>Mensaje</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="usuariosBody">

@@ -316,7 +316,26 @@ class AgentesNetBot:
             enviar_btn.wait_for(state='visible', timeout=5000)
             enviar_btn.click()
 
-            time.sleep(1)
+            time.sleep(1.5)
+
+            # Verificar si hay error de saldo insuficiente
+            try:
+                error_snackbar = self.page.locator('.v-snackbar__content')
+                if error_snackbar.is_visible(timeout=2000):
+                    error_text = error_snackbar.inner_text()
+                    if error_text:
+                        logger.error(f"Error en descarga: {error_text}")
+                        return {'success': False, 'message': 'EL USUARIO NO TIENE EL MONTO ESPECIFICADO'}
+            except:
+                pass
+
+            # Verificar que el modal se cerró (éxito)
+            try:
+                modal_cerrado = monto_input.is_hidden(timeout=2000)
+                if not modal_cerrado:
+                    return {'success': False, 'message': 'EL USUARIO NO TIENE EL MONTO ESPECIFICADO'}
+            except:
+                pass
 
             logger.info(f"Descarga de {monto} fichas completada")
             return {'success': True, 'message': f'Descarga de {monto} fichas completada'}
@@ -526,6 +545,129 @@ class AgentesNetBot:
                 return resultados
 
         return resultados
+
+    def buscar_retiros_usuario(self, nombre_usuario):
+        """Busca retiros (movimientos negativos) de un usuario en las últimas 23 horas"""
+        from datetime import datetime, timedelta
+
+        resultados = {
+            'success': False,
+            'retiros': [],
+            'tiene_retiros_recientes': False,
+            'message': ''
+        }
+
+        # Siempre cerrar sesión previa para evitar problemas de threading
+        self.forzar_cierre_navegador()
+
+        try:
+            self.iniciar_navegador()
+
+            # Login
+            login_result = self.login()
+            if not login_result['success']:
+                resultados['message'] = f"Error en login: {login_result['message']}"
+                return resultados
+
+            # Buscar usuario
+            busqueda = self.buscar_usuario(nombre_usuario)
+            if not busqueda['success']:
+                resultados['message'] = f"Error buscando usuario: {busqueda['message']}"
+                return resultados
+
+            # Encontrar usuario en lista
+            seleccion = self.encontrar_usuario_en_lista(nombre_usuario)
+            if not seleccion['success']:
+                resultados['message'] = f"Usuario '{nombre_usuario}' no encontrado"
+                return resultados
+
+            time.sleep(0.5)
+
+            # Click en botón de opciones (...)
+            opciones_btn = self.page.locator('button:has(i.mdi-dots-horizontal)')
+            opciones_btn.wait_for(state='visible', timeout=5000)
+            opciones_btn.first.click()
+            time.sleep(0.5)
+
+            # Click en "Detalles"
+            detalles_btn = self.page.locator('.v-list-item:has-text("Detalles")')
+            detalles_btn.wait_for(state='visible', timeout=5000)
+            detalles_btn.click()
+            time.sleep(1)
+
+            # Click en tab "Operaciones"
+            operaciones_tab = self.page.locator('button.v-tab:has-text("Operaciones")')
+            operaciones_tab.wait_for(state='visible', timeout=5000)
+            operaciones_tab.click()
+            time.sleep(1)
+
+            # Leer tabla de operaciones
+            tabla = self.page.locator('table tbody tr')
+            filas = tabla.all()
+
+            ahora = datetime.now()
+            hace_23_horas = ahora - timedelta(hours=23)
+            retiros = []
+
+            for fila in filas:
+                try:
+                    # Saltar fila de totales
+                    if 'operations-totals-row' in (fila.get_attribute('class') or ''):
+                        continue
+
+                    celdas = fila.locator('td').all()
+                    if len(celdas) >= 8:
+                        cantidad_texto = celdas[4].inner_text().strip()
+                        fecha_texto = celdas[7].inner_text().strip()
+
+                        # Verificar si es negativo
+                        if cantidad_texto.startswith('-'):
+                            monto = cantidad_texto.replace('-', '').strip()
+
+                            # Parsear fecha (formato: DD/MM/YYYY HH:MM:SS)
+                            try:
+                                fecha_op = datetime.strptime(fecha_texto, '%d/%m/%Y %H:%M:%S')
+                                es_reciente = fecha_op >= hace_23_horas
+
+                                retiro = {
+                                    'monto': monto,
+                                    'fecha': fecha_texto,
+                                    'es_reciente': es_reciente
+                                }
+                                retiros.append(retiro)
+
+                                if es_reciente:
+                                    resultados['tiene_retiros_recientes'] = True
+                            except:
+                                pass
+
+                except Exception as e:
+                    logger.warning(f"Error leyendo fila: {e}")
+                    continue
+
+            resultados['success'] = True
+            resultados['retiros'] = retiros
+
+            if resultados['tiene_retiros_recientes']:
+                resultados['message'] = f"ATENCION: El usuario tiene retiros en las ultimas 23 horas"
+            else:
+                resultados['message'] = f"No hay retiros recientes (ultimas 23 horas)"
+
+            # Cerrar modal
+            try:
+                close_btn = self.page.locator('button:has(i.mdi-close)').first
+                if close_btn.is_visible(timeout=1000):
+                    close_btn.click()
+            except:
+                pass
+
+            return resultados
+
+        except Exception as e:
+            logger.error(f"Error buscando retiros: {e}")
+            resultados['message'] = f"Error: {str(e)}"
+            self.forzar_cierre_navegador()
+            return resultados
 
 
 # Para pruebas directas

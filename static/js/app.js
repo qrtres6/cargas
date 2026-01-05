@@ -45,6 +45,10 @@ function initForm() {
     btnQuickPass.addEventListener('click', () => {
         document.getElementById('passwordUsuario').value = '1122casino';
     });
+
+    // Formulario de Buscar Retiros
+    const retirosForm = document.getElementById('retirosForm');
+    retirosForm.addEventListener('submit', handleRetirosSubmit);
 }
 
 async function handleFormSubmit(e, tipo) {
@@ -161,6 +165,69 @@ async function handleUsuarioSubmit(e) {
         showMessage(messageDiv, 'error', 'Error de conexión con el servidor');
     } finally {
         // Restaurar botón
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+    }
+}
+
+async function handleRetirosSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnRetiros');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    const messageDiv = document.getElementById('retirosMessage');
+    const resultadoDiv = document.getElementById('retirosResultado');
+    const usuarioField = document.getElementById('usuarioRetiros');
+
+    // Estado de carga
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    messageDiv.style.display = 'none';
+    resultadoDiv.style.display = 'none';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/buscar-retiros`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ usuario: usuarioField.value.trim() })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.tiene_retiros_recientes) {
+                showMessage(messageDiv, 'error', data.message);
+            } else {
+                showMessage(messageDiv, 'success', data.message);
+            }
+
+            // Mostrar retiros si hay
+            if (data.retiros && data.retiros.length > 0) {
+                let html = '<h4>Retiros encontrados:</h4><ul class="retiros-lista">';
+                data.retiros.forEach(r => {
+                    const clase = r.es_reciente ? 'retiro-reciente' : '';
+                    html += `<li class="${clase}">
+                        <strong>-${r.monto}</strong> - ${r.fecha}
+                        ${r.es_reciente ? '<span class="badge-reciente">RECIENTE</span>' : ''}
+                    </li>`;
+                });
+                html += '</ul>';
+                resultadoDiv.innerHTML = html;
+                resultadoDiv.style.display = 'block';
+            }
+        } else {
+            showMessage(messageDiv, 'error', data.error || data.message || 'Error al buscar retiros');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(messageDiv, 'error', 'Error de conexion con el servidor');
+    } finally {
         btn.disabled = false;
         btnText.style.display = 'inline';
         btnLoading.style.display = 'none';
@@ -450,7 +517,7 @@ function renderUsuarios(usuarios) {
     if (usuarios.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
                     No hay usuarios creados
                 </td>
             </tr>
@@ -458,7 +525,12 @@ function renderUsuarios(usuarios) {
         return;
     }
 
-    tbody.innerHTML = usuarios.map(u => `
+    tbody.innerHTML = usuarios.map(u => {
+        const aliasFinal = u.alias_final || u.alias_solicitado;
+        const copyBtn = u.estado === 'completada' ?
+            `<button class="btn btn-small btn-copy" onclick="copyCredentials('${escapeHtml(aliasFinal)}', '${escapeHtml(u.password)}')">Copiar</button>` :
+            '';
+        return `
         <tr>
             <td><strong>#${u.id}</strong></td>
             <td>${escapeHtml(u.alias_solicitado)}</td>
@@ -467,8 +539,25 @@ function renderUsuarios(usuarios) {
             <td><span class="status-badge ${u.estado}">${formatStatus(u.estado)}</span></td>
             <td>${formatDate(u.fecha_creacion)}</td>
             <td title="${escapeHtml(u.mensaje || '')}">${truncate(u.mensaje || '-', 30)}</td>
+            <td>${copyBtn}</td>
         </tr>
-    `).join('');
+    `}).join('');
+}
+
+function copyCredentials(usuario, password) {
+    const texto = `Usuario: ${usuario}\nContrasena: ${password}`;
+    navigator.clipboard.writeText(texto).then(() => {
+        alert('Credenciales copiadas!\\n\\n' + texto);
+    }).catch(err => {
+        // Fallback para navegadores sin clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Credenciales copiadas!\\n\\n' + texto);
+    });
 }
 
 function renderPaginationUsuarios(total, page, limit) {

@@ -392,6 +392,30 @@ def force_logout():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/buscar-retiros', methods=['POST'])
+def buscar_retiros():
+    """Busca retiros recientes de un usuario"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
+
+        usuario = data.get('usuario', '').strip().lower()
+
+        if not usuario:
+            return jsonify({'success': False, 'error': 'El usuario es requerido'}), 400
+
+        bot = AgentesNetBot()
+        resultado = bot.buscar_retiros_usuario(usuario)
+
+        return jsonify(resultado)
+
+    except Exception as e:
+        logger.error(f"Error en /api/buscar-retiros: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # ============== PANEL DE ADMINISTRACIÓN ==============
 
 def get_stats():
