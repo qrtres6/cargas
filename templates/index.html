@@ -163,6 +163,42 @@
                     <!-- Paginación -->
                 </div>
             </section>
+
+            <!-- Historial de Usuarios Creados -->
+            <section class="card history-section history-usuarios">
+                <h2>Historial de Usuarios Creados</h2>
+                <div class="filters">
+                    <select id="filterEstadoUsuarios">
+                        <option value="">Todos los estados</option>
+                        <option value="completada">Completadas</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="error">Errores</option>
+                    </select>
+                    <button class="btn btn-secondary" id="btnRefreshUsuarios">Actualizar</button>
+                </div>
+                <div class="table-container">
+                    <table class="operations-table" id="usuariosTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Alias Solicitado</th>
+                                <th>Alias Final</th>
+                                <th>Password</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Mensaje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuariosBody">
+                            <!-- Los usuarios se cargan dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="paginationUsuarios">
+                    <!-- Paginación -->
+                </div>
+            </section>
         </main>
 
         <!-- Footer -->

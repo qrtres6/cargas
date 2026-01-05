@@ -305,6 +305,18 @@ body {
     background: #d97706;
 }
 
+/* Historial de Usuarios */
+.history-usuarios h2 {
+    border-bottom-color: #8b5cf6;
+}
+
+.history-usuarios code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
 /* ============== MESSAGES ============== */
 .message {
     padding: 12px 16px;

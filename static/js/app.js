@@ -9,6 +9,7 @@ const ESTIMATED_PROCESS_TIME = 15; // Tiempo estimado de carga en segundos (opti
 
 // ============== ESTADO DE LA APLICACIÓN ==============
 let currentPage = 1;
+let currentPageUsuarios = 1;
 const itemsPerPage = 10;
 let processStartTimes = {}; // Almacena tiempos de inicio de procesos
 let countdownInterval = null;
@@ -181,6 +182,14 @@ function initFilters() {
     });
 
     document.getElementById('btnRefresh').addEventListener('click', loadData);
+
+    // Filtros para usuarios
+    document.getElementById('filterEstadoUsuarios').addEventListener('change', () => {
+        currentPageUsuarios = 1;
+        loadUsuarios();
+    });
+
+    document.getElementById('btnRefreshUsuarios').addEventListener('click', loadUsuarios);
 }
 
 // ============== CARGA DE DATOS ==============
@@ -188,7 +197,8 @@ async function loadData() {
     await Promise.all([
         loadStats(),
         loadQueue(),
-        loadOperations()
+        loadOperations(),
+        loadUsuarios()
     ]);
 }
 
@@ -407,6 +417,91 @@ function renderPagination(total, page, limit) {
 function goToPage(page) {
     currentPage = page;
     loadOperations();
+}
+
+// ============== USUARIOS ==============
+async function loadUsuarios() {
+    try {
+        const estado = document.getElementById('filterEstadoUsuarios').value;
+        let url = `${API_BASE}/api/usuarios?limite=${itemsPerPage}&pagina=${currentPageUsuarios}`;
+        if (estado) {
+            url += `&estado=${estado}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            renderUsuarios(data.usuarios);
+            renderPaginationUsuarios(data.total, data.pagina, data.limite);
+        }
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+    }
+}
+
+function renderUsuarios(usuarios) {
+    const tbody = document.getElementById('usuariosBody');
+
+    if (usuarios.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    No hay usuarios creados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = usuarios.map(u => `
+        <tr>
+            <td><strong>#${u.id}</strong></td>
+            <td>${escapeHtml(u.alias_solicitado)}</td>
+            <td><strong>${escapeHtml(u.alias_final || '-')}</strong></td>
+            <td><code>${escapeHtml(u.password)}</code></td>
+            <td><span class="status-badge ${u.estado}">${formatStatus(u.estado)}</span></td>
+            <td>${formatDate(u.fecha_creacion)}</td>
+            <td title="${escapeHtml(u.mensaje || '')}">${truncate(u.mensaje || '-', 30)}</td>
+        </tr>
+    `).join('');
+}
+
+function renderPaginationUsuarios(total, page, limit) {
+    const pagination = document.getElementById('paginationUsuarios');
+    const totalPages = Math.ceil(total / limit);
+
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    if (page > 1) {
+        html += `<button onclick="goToPageUsuarios(${page - 1})">Anterior</button>`;
+    }
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === page) {
+            html += `<button class="active">${i}</button>`;
+        } else if (Math.abs(i - page) <= 2 || i === 1 || i === totalPages) {
+            html += `<button onclick="goToPageUsuarios(${i})">${i}</button>`;
+        } else if (Math.abs(i - page) === 3) {
+            html += `<button disabled>...</button>`;
+        }
+    }
+
+    if (page < totalPages) {
+        html += `<button onclick="goToPageUsuarios(${page + 1})">Siguiente</button>`;
+    }
+
+    pagination.innerHTML = html;
+}
+
+function goToPageUsuarios(page) {
+    currentPageUsuarios = page;
+    loadUsuarios();
 }
 
 // ============== AUTO REFRESH ==============
