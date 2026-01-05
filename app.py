@@ -2,13 +2,17 @@
 Aplicación principal Flask para el sistema de carga de fichas
 """
 
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session
 from flask_cors import CORS
 from datetime import datetime
 import os
 import logging
+import hashlib
 
 from config import Config
+
+# Contraseña de admin (cambiar en producción)
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 from models import db, Operacion, TareaCola
 from queue_manager import queue_manager
 from bot import AgentesNetBot
@@ -232,6 +236,103 @@ def health_check():
         'timestamp': datetime.utcnow().isoformat(),
         'queue_status': queue_manager.obtener_estado()
     })
+
+
+# ============== PANEL DE ADMINISTRACIÓN ==============
+
+def get_stats():
+    """Obtiene estadísticas para el panel admin"""
+    return {
+        'total': Operacion.query.count(),
+        'completadas': Operacion.query.filter_by(estado='completada').count(),
+        'pendientes': Operacion.query.filter_by(estado='pendiente').count(),
+        'en_proceso': Operacion.query.filter_by(estado='en_proceso').count(),
+        'errores': Operacion.query.filter_by(estado='error').count()
+    }
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    """Página de login del admin"""
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_panel'))
+        else:
+            return render_template('admin_login.html', error='Contraseña incorrecta')
+
+    # Si ya está logueado, ir al panel
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_panel'))
+
+    return render_template('admin_login.html')
+
+@app.route('/admin/panel')
+def admin_panel():
+    """Panel de administración"""
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    message = request.args.get('message')
+    stats = get_stats()
+    return render_template('admin.html', stats=stats, message=message)
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Cerrar sesión de admin"""
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin/delete-completed', methods=['POST'])
+def delete_completed():
+    """Eliminar operaciones completadas"""
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    try:
+        count = Operacion.query.filter_by(estado='completada').delete()
+        db.session.commit()
+        logger.info(f"Admin eliminó {count} operaciones completadas")
+        return redirect(url_for('admin_panel', message=f'Se eliminaron {count} operaciones completadas'))
+    except Exception as e:
+        logger.error(f"Error eliminando completadas: {e}")
+        db.session.rollback()
+        return redirect(url_for('admin_panel', message=f'Error: {str(e)}'))
+
+@app.route('/admin/delete-errors', methods=['POST'])
+def delete_errors():
+    """Eliminar operaciones con error"""
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    try:
+        count = Operacion.query.filter_by(estado='error').delete()
+        db.session.commit()
+        logger.info(f"Admin eliminó {count} operaciones con error")
+        return redirect(url_for('admin_panel', message=f'Se eliminaron {count} operaciones con error'))
+    except Exception as e:
+        logger.error(f"Error eliminando errores: {e}")
+        db.session.rollback()
+        return redirect(url_for('admin_panel', message=f'Error: {str(e)}'))
+
+@app.route('/admin/delete-all', methods=['POST'])
+def delete_all():
+    """Eliminar todo el historial"""
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    try:
+        # Primero eliminar tareas de cola
+        TareaCola.query.delete()
+        # Luego eliminar operaciones
+        count = Operacion.query.delete()
+        db.session.commit()
+        logger.info(f"Admin eliminó TODO el historial ({count} operaciones)")
+        return redirect(url_for('admin_panel', message=f'Se eliminó todo el historial ({count} operaciones)'))
+    except Exception as e:
+        logger.error(f"Error eliminando historial: {e}")
+        db.session.rollback()
+        return redirect(url_for('admin_panel', message=f'Error: {str(e)}'))
 
 
 # ============== MANEJO DE ERRORES ==============

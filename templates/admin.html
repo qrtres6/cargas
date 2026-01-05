@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .admin-header h1 {
+            color: #1a1a2e;
+        }
+        .btn-logout {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .admin-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .admin-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .stat-box .label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .btn-danger {
+            padding: 12px 24px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-warning {
+            padding: 12px 24px;
+            background: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Panel de Administración</h1>
+            <a href="/admin/logout" class="btn-logout">Cerrar Sesión</a>
+        </div>
+
+        {% if message %}
+        <div class="success-message">{{ message }}</div>
+        {% endif %}
+
+        <!-- Estadísticas -->
+        <div class="admin-card">
+            <h2>Estadísticas del Sistema</h2>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="number" id="totalOps">{{ stats.total }}</div>
+                    <div class="label">Total Operaciones</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="completadas">{{ stats.completadas }}</div>
+                    <div class="label">Completadas</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="errores">{{ stats.errores }}</div>
+                    <div class="label">Errores</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="pendientes">{{ stats.pendientes }}</div>
+                    <div class="label">Pendientes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Eliminar Historial -->
+        <div class="admin-card">
+            <h2>Gestión del Historial</h2>
+            <div class="warning-box">
+                <strong>Advertencia:</strong> Estas acciones no se pueden deshacer. Asegurate de que querés eliminar los registros.
+            </div>
+
+            <div class="action-buttons">
+                <form method="POST" action="/admin/delete-completed" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar todas las operaciones completadas?');">
+                    <button type="submit" class="btn-warning">Eliminar Completadas ({{ stats.completadas }})</button>
+                </form>
+
+                <form method="POST" action="/admin/delete-errors" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar todas las operaciones con error?');">
+                    <button type="submit" class="btn-warning">Eliminar Errores ({{ stats.errores }})</button>
+                </form>
+
+                <form method="POST" action="/admin/delete-all" style="display:inline;" onsubmit="return confirm('¿Estás SEGURO de eliminar TODO el historial? Esta acción es IRREVERSIBLE.');">
+                    <button type="submit" class="btn-danger">Eliminar TODO el Historial</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configuración -->
+        <div class="admin-card">
+            <h2>Accesos Rápidos</h2>
+            <div class="action-buttons">
+                <a href="/" class="btn-warning" style="text-decoration:none;">Ir al Panel de Cargas</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
