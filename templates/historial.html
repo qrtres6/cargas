@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial por Usuario - Sistema de Carga de Fichas</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .nav-bar {
+            background: #1e293b;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav-bar a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .nav-bar a:hover {
+            background: #334155;
+            color: white;
+        }
+        .nav-bar a.active {
+            background: #2563eb;
+            color: white;
+        }
+        .filters-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filters-bar select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            min-width: 150px;
+        }
+        .totals-row {
+            background: #f1f5f9;
+            font-weight: bold;
+        }
+        .historial-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .historial-table th,
+        .historial-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .historial-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+        .historial-table tr:hover {
+            background: #f8fafc;
+        }
+        .monto-carga {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .monto-descarga {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .badge-cantidad {
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .summary-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .summary-card .label {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        .summary-card.cargas .value { color: #16a34a; }
+        .summary-card.descargas .value { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Historial por Usuario</h1>
+        </header>
+
+        <!-- Navegacion -->
+        <nav class="nav-bar">
+            <a href="/">Inicio</a>
+            <a href="/historial" class="active">Historial por Usuario</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Filtros -->
+            <section class="card">
+                <h2>Filtros</h2>
+                <div class="filters-bar">
+                    <select id="filterMes">
+                        <option value="">Todos los meses</option>
+                    </select>
+                    <select id="filterTipo">
+                        <option value="">Cargas y Descargas</option>
+                        <option value="carga">Solo Cargas</option>
+                        <option value="descarga">Solo Descargas</option>
+                    </select>
+                    <button class="btn btn-secondary" id="btnFiltrar">Aplicar Filtros</button>
+                    <button class="btn btn-secondary" id="btnLimpiar">Limpiar</button>
+                </div>
+            </section>
+
+            <!-- Resumen -->
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card">
+                    <div class="value" id="totalUsuarios">0</div>
+                    <div class="label">Usuarios</div>
+                </div>
+                <div class="summary-card cargas">
+                    <div class="value" id="totalCargas">$0</div>
+                    <div class="label">Total Cargas</div>
+                </div>
+                <div class="summary-card descargas">
+                    <div class="value" id="totalDescargas">$0</div>
+                    <div class="label">Total Descargas</div>
+                </div>
+                <div class="summary-card">
+                    <div class="value" id="totalOperaciones">0</div>
+                    <div class="label">Total Operaciones</div>
+                </div>
+            </div>
+
+            <!-- Tabla de Historial -->
+            <section class="card">
+                <h2>Detalle por Usuario</h2>
+                <div class="table-container">
+                    <table class="historial-table" id="historialTable">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Cargas</th>
+                                <th>Total Cargas</th>
+                                <th>Descargas</th>
+                                <th>Total Descargas</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialBody">
+                            <!-- Datos cargados dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Sistema de Carga de Fichas v1.0</p>
+        </footer>
+    </div>
+
+    <script>
+        const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistorial();
+            initFilters();
+        });
+
+        function initFilters() {
+            document.getElementById('btnFiltrar').addEventListener('click', loadHistorial);
+            document.getElementById('btnLimpiar').addEventListener('click', () => {
+                document.getElementById('filterMes').value = '';
+                document.getElementById('filterTipo').value = '';
+                loadHistorial();
+            });
+        }
+
+        async function loadHistorial() {
+            try {
+                const filterMes = document.getElementById('filterMes').value;
+                const filterTipo = document.getElementById('filterTipo').value;
+
+                let url = '/api/historial-agrupado?';
+                if (filterMes) {
+                    const [anio, mes] = filterMes.split('-');
+                    url += `anio=${anio}&mes=${mes}&`;
+                }
+                if (filterTipo) {
+                    url += `tipo=${filterTipo}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderMesesFilter(data.meses_disponibles);
+                    renderHistorial(data.historial);
+                    updateSummary(data.historial);
+                }
+            } catch (error) {
+                console.error('Error cargando historial:', error);
+            }
+        }
+
+        function renderMesesFilter(meses) {
+            const select = document.getElementById('filterMes');
+            const currentValue = select.value;
+
+            // Mantener la primera opcion
+            select.innerHTML = '<option value="">Todos los meses</option>';
+
+            meses.forEach(m => {
+                const value = `${m.anio}-${m.mes}`;
+                const label = `${MESES[m.mes]} ${m.anio}`;
+                select.innerHTML += `<option value="${value}">${label}</option>`;
+            });
+
+            // Restaurar valor seleccionado
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function renderHistorial(historial) {
+            const tbody = document.getElementById('historialBody');
+
+            if (historial.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                            No hay datos para mostrar
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = historial.map(h => {
+                const balance = h.cargas.total - h.descargas.total;
+                const balanceClass = balance >= 0 ? 'monto-carga' : 'monto-descarga';
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(h.usuario)}</strong></td>
+                        <td><span class="badge-cantidad">${h.cargas.cantidad}</span></td>
+                        <td class="monto-carga">${formatCurrency(h.cargas.total)}</td>
+                        <td><span class="badge-cantidad">${h.descargas.cantidad}</span></td>
+                        <td class="monto-descarga">${formatCurrency(h.descargas.total)}</td>
+                        <td class="${balanceClass}">${formatCurrency(balance)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateSummary(historial) {
+            let totalCargas = 0;
+            let totalDescargas = 0;
+            let cantidadOperaciones = 0;
+
+            historial.forEach(h => {
+                totalCargas += h.cargas.total;
+                totalDescargas += h.descargas.total;
+                cantidadOperaciones += h.cargas.cantidad + h.descargas.cantidad;
+            });
+
+            document.getElementById('totalUsuarios').textContent = historial.length;
+            document.getElementById('totalCargas').textContent = formatCurrency(totalCargas);
+            document.getElementById('totalDescargas').textContent = formatCurrency(totalDescargas);
+            document.getElementById('totalOperaciones').textContent = cantidadOperaciones;
+        }
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -416,6 +416,100 @@ def buscar_retiros():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/historial')
+def historial_page():
+    """Página de historial agrupado por usuario"""
+    return render_template('historial.html')
+
+
+@app.route('/api/historial-agrupado', methods=['GET'])
+def historial_agrupado():
+    """Obtiene historial de cargas/descargas agrupado por usuario y mes"""
+    try:
+        from sqlalchemy import func, extract
+
+        mes = request.args.get('mes', type=int)
+        anio = request.args.get('anio', type=int)
+        tipo = request.args.get('tipo', '')  # 'carga', 'descarga' o '' para ambos
+
+        # Query base - solo operaciones completadas
+        query = db.session.query(
+            Operacion.usuario_destino,
+            Operacion.tipo,
+            func.count(Operacion.id).label('cantidad'),
+            func.sum(Operacion.monto).label('total_monto')
+        ).filter(Operacion.estado == 'completada')
+
+        # Filtrar por mes/año si se especifica
+        if mes and anio:
+            query = query.filter(
+                extract('month', Operacion.fecha_creacion) == mes,
+                extract('year', Operacion.fecha_creacion) == anio
+            )
+        elif anio:
+            query = query.filter(
+                extract('year', Operacion.fecha_creacion) == anio
+            )
+
+        # Filtrar por tipo si se especifica
+        if tipo in ['carga', 'descarga']:
+            query = query.filter(Operacion.tipo == tipo)
+
+        # Agrupar por usuario y tipo
+        resultados = query.group_by(
+            Operacion.usuario_destino,
+            Operacion.tipo
+        ).order_by(
+            Operacion.usuario_destino
+        ).all()
+
+        # Formatear resultados
+        historial = {}
+        for r in resultados:
+            usuario = r.usuario_destino
+            if usuario not in historial:
+                historial[usuario] = {
+                    'usuario': usuario,
+                    'cargas': {'cantidad': 0, 'total': 0},
+                    'descargas': {'cantidad': 0, 'total': 0}
+                }
+
+            if r.tipo == 'carga':
+                historial[usuario]['cargas']['cantidad'] = r.cantidad
+                historial[usuario]['cargas']['total'] = float(r.total_monto or 0)
+            else:
+                historial[usuario]['descargas']['cantidad'] = r.cantidad
+                historial[usuario]['descargas']['total'] = float(r.total_monto or 0)
+
+        # Obtener meses disponibles para el filtro
+        meses_disponibles = db.session.query(
+            extract('year', Operacion.fecha_creacion).label('anio'),
+            extract('month', Operacion.fecha_creacion).label('mes')
+        ).filter(
+            Operacion.estado == 'completada'
+        ).distinct().order_by(
+            extract('year', Operacion.fecha_creacion).desc(),
+            extract('month', Operacion.fecha_creacion).desc()
+        ).all()
+
+        meses = [{'anio': int(m.anio), 'mes': int(m.mes)} for m in meses_disponibles]
+
+        return jsonify({
+            'success': True,
+            'historial': list(historial.values()),
+            'meses_disponibles': meses,
+            'filtros': {
+                'mes': mes,
+                'anio': anio,
+                'tipo': tipo
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/historial-agrupado: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # ============== PANEL DE ADMINISTRACIÓN ==============
 
 def get_stats():

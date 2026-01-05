@@ -54,6 +54,31 @@ body {
     color: var(--text-color);
 }
 
+.nav-links {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-link {
+    padding: 8px 16px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    background: #f1f5f9;
+    color: var(--text-color);
+}
+
+.nav-link.active {
+    background: var(--primary-color);
+    color: white;
+}
+
 .status-indicator {
     display: flex;
     align-items: center;
