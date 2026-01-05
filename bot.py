@@ -22,6 +22,7 @@ class AgentesNetBot:
     _browser = None
     _page = None
     _logged_in = False
+    _last_activity = None  # Timestamp de última actividad
 
     def __init__(self, headless=None):
         self.headless = headless if headless is not None else Config.HEADLESS
@@ -67,17 +68,43 @@ class AgentesNetBot:
             AgentesNetBot._browser = None
             AgentesNetBot._page = None
             AgentesNetBot._logged_in = False
+            AgentesNetBot._last_activity = None
             logger.info("Navegador cerrado")
+
+    def verificar_sesion(self):
+        """Verifica si la sesión sigue activa y hace refresh si es necesario"""
+        try:
+            # Si pasaron más de 60 segundos desde la última actividad, verificar sesión
+            if AgentesNetBot._last_activity:
+                tiempo_inactivo = time.time() - AgentesNetBot._last_activity
+                if tiempo_inactivo > 60:
+                    logger.info(f"Verificando sesión después de {int(tiempo_inactivo)}s de inactividad")
+                    # Refrescar la página para mantener sesión
+                    self.page.reload(wait_until='domcontentloaded', timeout=15000)
+                    time.sleep(1)
+
+            # Verificar que seguimos logueados
+            search_field = self.page.locator('input[placeholder="Buscar usuario"]')
+            if search_field.is_visible(timeout=3000):
+                AgentesNetBot._last_activity = time.time()
+                return True
+            return False
+        except Exception as e:
+            logger.warning(f"Error verificando sesión: {e}")
+            return False
 
     def login(self):
         """Realiza el login en AgentesNet (salta si ya está logueado)"""
         # Verificar si ya está logueado
         if AgentesNetBot._logged_in:
             try:
-                search_field = self.page.locator('input[placeholder="Buscar usuario"]')
-                if search_field.is_visible(timeout=2000):
-                    logger.info("Ya está logueado, saltando login")
+                # Verificar y refrescar sesión si es necesario
+                if self.verificar_sesion():
+                    logger.info("Sesión activa verificada")
                     return {'success': True, 'message': 'Sesión existente'}
+                else:
+                    logger.info("Sesión expirada, relogueando...")
+                    AgentesNetBot._logged_in = False
             except:
                 AgentesNetBot._logged_in = False
 
@@ -111,6 +138,7 @@ class AgentesNetBot:
             search_field = self.page.locator('input[placeholder="Buscar usuario"]')
             search_field.wait_for(state='visible', timeout=15000)
             AgentesNetBot._logged_in = True
+            AgentesNetBot._last_activity = time.time()
             logger.info("Login exitoso")
             return {'success': True, 'message': 'Login exitoso'}
 
@@ -354,6 +382,7 @@ class AgentesNetBot:
                     resultados['message'] = f'Usuario {alias_actual} creado exitosamente'
                     if alias_actual != alias:
                         resultados['message'] += f' (alias original "{alias}" no disponible)'
+                    AgentesNetBot._last_activity = time.time()
                     return resultados
 
                 # Si el alias está duplicado, agregar número
@@ -422,6 +451,7 @@ class AgentesNetBot:
 
             resultados['success'] = True
             resultados['message'] = f"{accion} exitosa: {monto} fichas {'de' if tipo == 'descarga' else 'a'} {nombre_usuario}"
+            AgentesNetBot._last_activity = time.time()
             return resultados
 
         except Exception as e:
