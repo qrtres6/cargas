@@ -5,10 +5,13 @@
 // ============== CONFIGURACIÓN ==============
 const API_BASE = '';
 const REFRESH_INTERVAL = 5000; // 5 segundos
+const ESTIMATED_PROCESS_TIME = 35; // Tiempo estimado de carga en segundos
 
 // ============== ESTADO DE LA APLICACIÓN ==============
 let currentPage = 1;
 const itemsPerPage = 10;
+let processStartTimes = {}; // Almacena tiempos de inicio de procesos
+let countdownInterval = null;
 
 // ============== INICIALIZACIÓN ==============
 document.addEventListener('DOMContentLoaded', () => {
@@ -149,28 +152,86 @@ async function loadQueue() {
             } else {
                 queueStatus.classList.remove('active');
                 queueStatusText.textContent = 'Sin tareas en proceso';
+                // Limpiar tiempos de proceso
+                processStartTimes = {};
             }
 
             // Renderizar cola
             if (data.cola.length === 0) {
                 queueList.innerHTML = '<div class="empty-queue">No hay tareas pendientes</div>';
             } else {
-                queueList.innerHTML = data.cola.map(op => `
-                    <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
-                        <div class="queue-item-info">
-                            <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
-                            <span class="queue-item-amount">${formatNumber(op.monto)} fichas</span>
+                queueList.innerHTML = data.cola.map((op, index) => {
+                    // Registrar tiempo de inicio si está en proceso
+                    if (op.estado === 'en_proceso' && !processStartTimes[op.id]) {
+                        processStartTimes[op.id] = op.fecha_proceso ? new Date(op.fecha_proceso) : new Date();
+                    }
+
+                    // Calcular tiempo restante para la tarea actual
+                    let tiempoInfo = '';
+                    if (op.estado === 'en_proceso') {
+                        tiempoInfo = `<span class="queue-item-countdown" data-id="${op.id}">Calculando...</span>`;
+                    } else {
+                        // Estimar tiempo de espera basado en posición en cola
+                        const waitTime = index * ESTIMATED_PROCESS_TIME;
+                        tiempoInfo = `<span class="queue-item-wait">~${waitTime}s de espera</span>`;
+                    }
+
+                    return `
+                        <div class="queue-item ${op.estado === 'en_proceso' ? 'processing' : ''}">
+                            <div class="queue-item-info">
+                                <span class="queue-item-user">${escapeHtml(op.usuario_destino)}</span>
+                                <span class="queue-item-amount">${formatNumber(op.monto)} fichas</span>
+                            </div>
+                            <div class="queue-item-time">
+                                ${tiempoInfo}
+                                <span class="queue-item-status">
+                                    ${op.estado === 'en_proceso' ? 'Procesando' : 'En cola'}
+                                </span>
+                            </div>
                         </div>
-                        <span class="queue-item-status">
-                            ${op.estado === 'en_proceso' ? 'Procesando' : 'En cola'}
-                        </span>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                // Iniciar contador
+                startCountdown();
             }
         }
     } catch (error) {
         console.error('Error cargando cola:', error);
     }
+}
+
+function startCountdown() {
+    // Limpiar intervalo anterior
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+
+    // Actualizar countdown cada segundo
+    countdownInterval = setInterval(updateCountdowns, 1000);
+    updateCountdowns(); // Actualizar inmediatamente
+}
+
+function updateCountdowns() {
+    const countdowns = document.querySelectorAll('.queue-item-countdown');
+
+    countdowns.forEach(el => {
+        const id = el.dataset.id;
+        const startTime = processStartTimes[id];
+
+        if (startTime) {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const remaining = Math.max(0, ESTIMATED_PROCESS_TIME - elapsed);
+
+            if (remaining > 0) {
+                el.textContent = `~${remaining}s restantes`;
+                el.style.color = remaining < 10 ? '#4caf50' : '#ff9800';
+            } else {
+                el.textContent = 'Finalizando...';
+                el.style.color = '#4caf50';
+            }
+        }
+    });
 }
 
 async function loadOperations() {
