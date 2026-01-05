@@ -62,6 +62,29 @@
                 </section>
             </div>
 
+            <!-- Formulario de Crear Usuario -->
+            <section class="card form-section form-usuario">
+                <h2>Crear Usuario</h2>
+                <form id="usuarioForm">
+                    <div class="form-group">
+                        <label for="aliasUsuario">Alias:</label>
+                        <input type="text" id="aliasUsuario" name="alias" placeholder="Nombre de usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passwordUsuario">Contraseña:</label>
+                        <div class="password-input-group">
+                            <input type="text" id="passwordUsuario" name="password" placeholder="Contraseña">
+                            <button type="button" class="btn btn-small btn-quick-pass" id="btnQuickPass">1122casino</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-usuario" id="btnUsuario">
+                        <span class="btn-text">+ Crear Usuario</span>
+                        <span class="btn-loading" style="display:none;">Procesando...</span>
+                    </button>
+                </form>
+                <div id="usuarioMessage" class="message" style="display:none;"></div>
+            </section>
+
             <!-- Estadísticas -->
             <section class="card stats-section">
                 <h2>Estadísticas</h2>

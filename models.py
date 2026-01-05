@@ -32,6 +32,34 @@ class Operacion(db.Model):
             'fecha_completado': self.fecha_completado.isoformat() if self.fecha_completado else None
         }
 
+class CreacionUsuario(db.Model):
+    """Registro de creación de usuarios"""
+    __tablename__ = 'creacion_usuarios'
+
+    id = db.Column(db.Integer, primary_key=True)
+    alias_solicitado = db.Column(db.String(100), nullable=False)
+    alias_final = db.Column(db.String(100), nullable=True)
+    password = db.Column(db.String(100), nullable=False)
+    estado = db.Column(db.String(20), default='pendiente')  # pendiente, en_proceso, completada, error
+    mensaje = db.Column(db.Text, nullable=True)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_proceso = db.Column(db.DateTime, nullable=True)
+    fecha_completado = db.Column(db.DateTime, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'alias_solicitado': self.alias_solicitado,
+            'alias_final': self.alias_final,
+            'password': self.password,
+            'estado': self.estado,
+            'mensaje': self.mensaje,
+            'fecha_creacion': self.fecha_creacion.isoformat() if self.fecha_creacion else None,
+            'fecha_proceso': self.fecha_proceso.isoformat() if self.fecha_proceso else None,
+            'fecha_completado': self.fecha_completado.isoformat() if self.fecha_completado else None
+        }
+
+
 class TareaCola(db.Model):
     """Cola de tareas pendientes"""
     __tablename__ = 'cola_tareas'

@@ -257,6 +257,124 @@ class AgentesNetBot:
             logger.error(f"Error descargando fichas: {e}")
             return {'success': False, 'message': str(e)}
 
+    def crear_jugador(self, alias, password):
+        """Crea un nuevo jugador en AgentesNet"""
+        try:
+            logger.info(f"Creando jugador: {alias}")
+
+            # Click en botón "Crear jugador"
+            crear_btn = self.page.locator('button.bg-secondary:has-text("Crear jugador")')
+            crear_btn.wait_for(state='visible', timeout=5000)
+            crear_btn.click()
+
+            time.sleep(0.5)
+
+            # Esperar modal y llenar campos
+            alias_input = self.page.locator('input[placeholder="Alias"]').last
+            alias_input.wait_for(state='visible', timeout=5000)
+            alias_input.fill(alias)
+
+            password_input = self.page.locator('input[placeholder="password_placeholder"]')
+            password_input.wait_for(state='visible', timeout=3000)
+            password_input.fill(password)
+
+            time.sleep(0.3)
+
+            # Click en Guardar
+            guardar_btn = self.page.locator('button.bg-primary:has-text("Guardar")')
+            guardar_btn.wait_for(state='visible', timeout=3000)
+            guardar_btn.click()
+
+            time.sleep(1)
+
+            # Verificar si hay error de alias duplicado
+            try:
+                error_msg = self.page.locator('.v-snackbar__content:has-text("Duplicated alias")')
+                if error_msg.is_visible(timeout=2000):
+                    logger.warning(f"Alias {alias} ya existe")
+                    # Cerrar modal si sigue abierto
+                    try:
+                        close_btn = self.page.locator('button:has(i.mdi-close)').first
+                        if close_btn.is_visible(timeout=1000):
+                            close_btn.click()
+                    except:
+                        pass
+                    return {'success': False, 'message': 'Alias duplicado', 'duplicado': True}
+            except:
+                pass
+
+            # Verificar éxito - el modal debe desaparecer
+            try:
+                modal_cerrado = self.page.locator('input[placeholder="password_placeholder"]')
+                modal_cerrado.wait_for(state='hidden', timeout=3000)
+                logger.info(f"Jugador {alias} creado exitosamente")
+                return {'success': True, 'message': f'Jugador {alias} creado exitosamente'}
+            except:
+                # Si el modal sigue visible, hubo algún error
+                return {'success': False, 'message': 'Error desconocido al crear jugador', 'duplicado': False}
+
+        except PlaywrightTimeout as e:
+            logger.error(f"Timeout creando jugador: {e}")
+            return {'success': False, 'message': f'Timeout: {str(e)}', 'duplicado': False}
+        except Exception as e:
+            logger.error(f"Error creando jugador: {e}")
+            return {'success': False, 'message': str(e), 'duplicado': False}
+
+    def ejecutar_creacion_usuario(self, alias, password):
+        """Ejecuta el proceso completo de creación de usuario con reintentos"""
+        resultados = {
+            'login': None,
+            'creacion': None,
+            'success': False,
+            'message': '',
+            'alias_final': alias
+        }
+
+        try:
+            self.iniciar_navegador()
+
+            # Login
+            resultados['login'] = self.login()
+            if not resultados['login']['success']:
+                resultados['message'] = f"Error en login: {resultados['login']['message']}"
+                self.forzar_cierre_navegador()
+                return resultados
+
+            # Intentar crear usuario
+            alias_actual = alias
+            intentos = 0
+            max_intentos = 10
+
+            while intentos < max_intentos:
+                resultados['creacion'] = self.crear_jugador(alias_actual, password)
+
+                if resultados['creacion']['success']:
+                    resultados['success'] = True
+                    resultados['alias_final'] = alias_actual
+                    resultados['message'] = f'Usuario {alias_actual} creado exitosamente'
+                    if alias_actual != alias:
+                        resultados['message'] += f' (alias original "{alias}" no disponible)'
+                    return resultados
+
+                # Si el alias está duplicado, agregar número
+                if resultados['creacion'].get('duplicado'):
+                    intentos += 1
+                    alias_actual = f"{alias}{intentos}"
+                    logger.info(f"Intentando con alias alternativo: {alias_actual}")
+                    time.sleep(0.5)
+                else:
+                    # Error no relacionado con duplicado
+                    resultados['message'] = f"Error creando usuario: {resultados['creacion']['message']}"
+                    return resultados
+
+            resultados['message'] = f"No se pudo crear usuario después de {max_intentos} intentos"
+            return resultados
+
+        except Exception as e:
+            resultados['message'] = f"Error general: {str(e)}"
+            self.forzar_cierre_navegador()
+            return resultados
+
     def ejecutar_carga_completa(self, nombre_usuario, monto, tipo='carga'):
         """Ejecuta el proceso completo de carga/descarga de fichas"""
         resultados = {

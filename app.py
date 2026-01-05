@@ -13,7 +13,7 @@ from config import Config
 
 # Contraseña de admin (cambiar en producción)
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
-from models import db, Operacion, TareaCola
+from models import db, Operacion, TareaCola, CreacionUsuario
 from queue_manager import queue_manager
 from bot import AgentesNetBot
 
@@ -232,6 +232,108 @@ def ver_cola():
 
     except Exception as e:
         logger.error(f"Error en /api/cola: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/crear-usuario', methods=['POST'])
+def crear_usuario():
+    """
+    Endpoint para solicitar creación de usuario
+    Body: { "alias": "nombre_usuario", "password": "contraseña" }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'error': 'No se recibieron datos'}), 400
+
+        alias = data.get('alias', '').strip()
+        password = data.get('password', '').strip()
+        usar_password_rapido = data.get('password_rapido', False)
+
+        # Validaciones
+        if not alias:
+            return jsonify({'success': False, 'error': 'El alias es requerido'}), 400
+
+        # Si usa password rápido, usar 1122casino
+        if usar_password_rapido or not password:
+            password = '1122casino'
+
+        # Crear registro en base de datos
+        creacion = CreacionUsuario(
+            alias_solicitado=alias,
+            password=password,
+            estado='pendiente'
+        )
+        db.session.add(creacion)
+        db.session.commit()
+
+        # Agregar a la cola de tareas
+        queue_manager.agregar_tarea_usuario(
+            creacion_id=creacion.id,
+            alias=alias,
+            password=password
+        )
+
+        logger.info(f"Nueva creación de usuario solicitada: {alias}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Creación de usuario agregada a la cola',
+            'creacion_id': creacion.id,
+            'posicion_cola': queue_manager.obtener_estado()['tareas_pendientes']
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/crear-usuario: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/usuarios', methods=['GET'])
+def listar_usuarios():
+    """Lista todas las creaciones de usuarios con filtros opcionales"""
+    try:
+        estado = request.args.get('estado')
+        limite = request.args.get('limite', 50, type=int)
+        pagina = request.args.get('pagina', 1, type=int)
+
+        query = CreacionUsuario.query.order_by(CreacionUsuario.fecha_creacion.desc())
+
+        if estado:
+            query = query.filter_by(estado=estado)
+
+        # Paginación
+        total = query.count()
+        creaciones = query.offset((pagina - 1) * limite).limit(limite).all()
+
+        return jsonify({
+            'success': True,
+            'usuarios': [c.to_dict() for c in creaciones],
+            'total': total,
+            'pagina': pagina,
+            'limite': limite
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/usuarios: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/cola-usuarios', methods=['GET'])
+def ver_cola_usuarios():
+    """Obtiene las creaciones de usuario en cola pendientes"""
+    try:
+        pendientes = CreacionUsuario.query.filter(
+            CreacionUsuario.estado.in_(['pendiente', 'en_proceso'])
+        ).order_by(CreacionUsuario.fecha_creacion.asc()).all()
+
+        return jsonify({
+            'success': True,
+            'cola': [c.to_dict() for c in pendientes]
+        })
+
+    except Exception as e:
+        logger.error(f"Error en /api/cola-usuarios: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

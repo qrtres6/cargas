@@ -30,6 +30,16 @@ function initForm() {
     // Formulario de Descarga
     const descargaForm = document.getElementById('descargaForm');
     descargaForm.addEventListener('submit', (e) => handleFormSubmit(e, 'descarga'));
+
+    // Formulario de Crear Usuario
+    const usuarioForm = document.getElementById('usuarioForm');
+    usuarioForm.addEventListener('submit', handleUsuarioSubmit);
+
+    // Botón de password rápido
+    const btnQuickPass = document.getElementById('btnQuickPass');
+    btnQuickPass.addEventListener('click', () => {
+        document.getElementById('passwordUsuario').value = '1122casino';
+    });
 }
 
 async function handleFormSubmit(e, tipo) {
@@ -75,6 +85,65 @@ async function handleFormSubmit(e, tipo) {
             // Limpiar campos
             usuarioField.value = '';
             montoField.value = '';
+
+            // Actualizar datos
+            loadData();
+        } else {
+            showMessage(messageDiv, 'error', data.error || 'Error al procesar la solicitud');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(messageDiv, 'error', 'Error de conexión con el servidor');
+    } finally {
+        // Restaurar botón
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+    }
+}
+
+async function handleUsuarioSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnUsuario');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    const messageDiv = document.getElementById('usuarioMessage');
+    const aliasField = document.getElementById('aliasUsuario');
+    const passwordField = document.getElementById('passwordUsuario');
+
+    // Estado de carga
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    messageDiv.style.display = 'none';
+
+    // Obtener datos del formulario
+    const formData = {
+        alias: aliasField.value.trim(),
+        password: passwordField.value.trim() || '1122casino',
+        password_rapido: !passwordField.value.trim()
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/api/crear-usuario`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage(messageDiv, 'success',
+                `Usuario en cola! ID: ${data.creacion_id}. Posición: ${data.posicion_cola}`);
+
+            // Limpiar campos
+            aliasField.value = '';
+            passwordField.value = '';
 
             // Actualizar datos
             loadData();

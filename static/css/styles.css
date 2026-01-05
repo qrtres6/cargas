@@ -239,6 +239,66 @@ body {
     border-bottom-color: #ec4899;
 }
 
+/* Formulario de Usuario */
+.form-usuario {
+    max-width: 500px;
+}
+
+.form-usuario h2 {
+    border-bottom-color: #8b5cf6;
+}
+
+.btn-usuario {
+    background: #8b5cf6;
+    color: white;
+    width: 100%;
+}
+
+.btn-usuario:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+}
+
+.btn-usuario:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.password-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.password-input-group input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.password-input-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-small {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+}
+
+.btn-quick-pass {
+    background: #f59e0b;
+    color: white;
+    white-space: nowrap;
+}
+
+.btn-quick-pass:hover {
+    background: #d97706;
+}
+
 /* ============== MESSAGES ============== */
 .message {
     padding: 12px 16px;
