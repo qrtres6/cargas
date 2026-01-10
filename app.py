@@ -12,7 +12,7 @@ import hashlib
 from config import Config
 
 # Contraseña de admin (cambiar en producción)
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '1234')
 from models import db, Operacion, TareaCola, CreacionUsuario
 from queue_manager import queue_manager
 from bot import AgentesNetBot
