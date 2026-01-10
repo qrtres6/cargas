@@ -230,13 +230,16 @@ class AgentesNetBot:
             return {'success': False, 'message': str(e)}
 
     def encontrar_usuario_en_lista(self, nombre_usuario):
-        """Encuentra y selecciona al usuario en la lista (optimizado)"""
+        """Encuentra y selecciona al usuario en la lista (case-insensitive)"""
+        import re
         try:
             logger.info(f"Buscando {nombre_usuario} en resultados...")
             time.sleep(0.5)
 
-            # Buscar directamente por texto
-            usuario_elemento = self.page.locator(f'text="{nombre_usuario}"').first
+            # Buscar por texto case-insensitive usando regex
+            usuario_elemento = self.page.locator('td').filter(
+                has_text=re.compile(f'^{re.escape(nombre_usuario)}$', re.IGNORECASE)
+            ).first
             usuario_elemento.wait_for(state='visible', timeout=5000)
             usuario_elemento.click()
 
