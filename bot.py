@@ -195,6 +195,8 @@ class AgentesNetBot:
     def buscar_usuario(self, nombre_usuario):
         """Busca un usuario en el sistema (optimizado)"""
         try:
+            # Convertir a minúsculas para búsqueda
+            nombre_usuario = nombre_usuario.lower()
             logger.info(f"Buscando usuario: {nombre_usuario}")
 
             # Campo de búsqueda
