@@ -236,9 +236,9 @@ class AgentesNetBot:
             logger.info(f"Buscando {nombre_usuario} en resultados...")
             time.sleep(0.5)
 
-            # Buscar por texto case-insensitive usando regex
+            # Buscar por texto case-insensitive usando regex (más flexible)
             usuario_elemento = self.page.locator('td').filter(
-                has_text=re.compile(f'^{re.escape(nombre_usuario)}$', re.IGNORECASE)
+                has_text=re.compile(re.escape(nombre_usuario), re.IGNORECASE)
             ).first
             usuario_elemento.wait_for(state='visible', timeout=5000)
             usuario_elemento.click()
